@@ -1129,13 +1129,16 @@ const EditProject = (props) => {
                 return false;
             }
             if(node.part.data.category === "factory") {
-                factory_mode_select_map.set(node.part.data.key, 0);
+                if(!factory_mode_select_map.get(node.part.data.key))
+                    factory_mode_select_map.set(node.part.data.key, 0);
                 var MODE_AREA_NAME_ARRAY = ["MODE_A", "MODE_B", "MODE_C", "MODE_D"];
                 if(node.part.data.mode_configuration) {
                     for(var i = 0; i < node.part.data.mode_configuration.mode_list.length; i++) {
                         let obj = node.findObject(MODE_AREA_NAME_ARRAY[i])
                         obj.visible = true;
-                        selectMode(0, "MODE_A", obj);
+                        const index = factory_mode_select_map.get(node.part.data.key);
+                        console.log(index);
+                        selectMode(index, MODE_AREA_NAME_ARRAY[index], obj);
                     }
                     node.memberParts.each(function(node2) {
                         if(node2.part.data.category === "modeChangeInputPort") {
@@ -1144,7 +1147,8 @@ const EditProject = (props) => {
                         if(node2.part.data.category === "factory") {
                             return
                         }  
-                        if(node2.part.data.mode !== node.part.data.mode_configuration.initial_mode) {
+                        console.log(node2.part.data.key, node2.part.data.mode)
+                        if(node2.part.data.mode !== node.part.data.mode_configuration.mode_list[factory_mode_select_map.get(node.part.data.key)].name) {
                             node2.visible = false;
                             if(!node2.part.memberParts) return;
                             node2.part.memberParts.each(function(member) {
@@ -2407,7 +2411,7 @@ const EditProject = (props) => {
                   myDiagram.commandHandler.addTopLevelParts(myDiagram.selection, true);
                 },                          
                 memberAdded: function(grp, node) {
-                    console.log("memberAdded");
+                    console.log("memberAdded", node.part.data.key);
                     if(node.name === "FACTORY") {
                         grp.zOrder = node.zOrder-1;
                     }
@@ -2423,6 +2427,9 @@ const EditProject = (props) => {
                         })
                         return;
                     }
+                    else if(isDragging){
+                        myDiagram.model.setDataProperty(node.part.data, "mode", grp.part.data.mode_configuration.mode_list[factory_mode_select_map.get(grp.key)].name)
+                    }
                     if(grp.part.data.mode_configuration) {
                         var flag = false;
                         if(node.category !== "modeChangeInputPort" && factory_mode_select_map.get(grp.key) > 0) {
@@ -2435,8 +2442,8 @@ const EditProject = (props) => {
                                 }
                             }
                         })
-                        if(grp.part.data.mode_configuration.mode_list[factory_mode_select_map.get(grp.key)])
-                            myDiagram.model.setDataProperty(myDiagram.model.findNodeDataForKey(node.key), "mode", grp.part.data.mode_configuration.mode_list[factory_mode_select_map.get(grp.key)].name)
+                        // if(grp.part.data.mode_configuration.mode_list[factory_mode_select_map.get(grp.key)])
+                            // myDiagram.model.setDataProperty(myDiagram.model.findNodeDataForKey(node.key), "mode", grp.part.data.mode_configuration.mode_list[factory_mode_select_map.get(grp.key)].name)
                     }
                 },
     
@@ -3634,12 +3641,15 @@ const EditProject = (props) => {
                 <div id="currentFile" style={{display:'none'}}>(NEW_FILENAME)</div>
                 <AppBar position="static" className={classes.appBar}>
                     <Toolbar>
-                    <a className={classes.logoWrapper} href="/">
+                    <div className={classes.logoWrapper}>
+                    <a href="/">
                         <img 
                         alt="logo"
                         className={classes.logo}
                         src="/images/splash_logo.png"/>
                     </a>
+                    </div>
+                    
                     <Button
                         className={classes.button}
                         onClick={request_cancel}
