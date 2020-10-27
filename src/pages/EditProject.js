@@ -221,6 +221,7 @@ function selectMode(mode_index, mode, obj) {
     obj.part.memberParts.each(function(node) {
         if(node.part.data.key == -1) return;
         if(node.part.data.category === "modeChangeInputPort") return;
+        if(!node.part.data.group) return;
         makeVisibleRecursive(node, node.part.data.mode === myDiagram.model.findNodeDataForKey(node.part.data.group).mode_configuration.mode_list[mode_index].name);
     })
     myDiagram.links.each(function(link) {
@@ -1137,7 +1138,6 @@ const EditProject = (props) => {
                         let obj = node.findObject(MODE_AREA_NAME_ARRAY[i])
                         obj.visible = true;
                         const index = factory_mode_select_map.get(node.part.data.key);
-                        console.log(index);
                         selectMode(index, MODE_AREA_NAME_ARRAY[index], obj);
                     }
                     node.memberParts.each(function(node2) {
@@ -1147,7 +1147,6 @@ const EditProject = (props) => {
                         if(node2.part.data.category === "factory") {
                             return
                         }  
-                        console.log(node2.part.data.key, node2.part.data.mode)
                         if(node2.part.data.mode !== node.part.data.mode_configuration.mode_list[factory_mode_select_map.get(node.part.data.key)].name) {
                             node2.visible = false;
                             if(!node2.part.memberParts) return;
@@ -1165,6 +1164,7 @@ const EditProject = (props) => {
                         }
                         else {
                             node2.visible = true;
+                            if(!node2.part.memberParts) return;
                             node2.part.memberParts.each(function(member) {
                                 member.visible = true;    
                                 myDiagram.links.each(function(link) {
@@ -1513,7 +1513,7 @@ const EditProject = (props) => {
                     shadowOffset: new go.Point(0, 0),
                     shadowBlur: 15,
                     shadowColor: "blue",
-                    resizable: false,
+                    resizable: true,
                     resizeObjectName: "SHAPE",
                     visible: true,
                 }
@@ -2427,7 +2427,7 @@ const EditProject = (props) => {
                         })
                         return;
                     }
-                    else if(isDragging){
+                    else if(isDragging && grp.part.data.mode_configuration){
                         myDiagram.model.setDataProperty(node.part.data, "mode", grp.part.data.mode_configuration.mode_list[factory_mode_select_map.get(grp.key)].name)
                     }
                     if(grp.part.data.mode_configuration) {
@@ -2436,7 +2436,7 @@ const EditProject = (props) => {
                             flag = true;
                         }
                         myDiagram.nodes.each(function(node2){
-                            if(node2.part.data.category === "modeChangeInputPort" && node2.part.data.group === grp.key) {
+                            if(node2.part.data && node2.part.data.category === "modeChangeInputPort" && node2.part.data.group === grp.key) {
                                 if(flag) {
                                     node2.deletable = false;
                                 }
