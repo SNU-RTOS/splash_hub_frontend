@@ -169,17 +169,18 @@ const ModeConfigurationModal = (props) => {
         setNewEvent('');
     }
     const addMode = () => {
-        const new_list = modeList.slice();
+        const new_list = JSON.parse(JSON.stringify(modeList))
         setModeList([]);
         const data = {
             name: newMode,
-            events: eventList,
+            events: JSON.parse(JSON.stringify(eventList)),
         };
         data.events.map(event => {
             event.next_mode = newMode;
             event.output_internal_data_items = false;
         });
         new_list.push(data);
+        // console.log(new_list)
         setModeList(new_list);
         setNewMode('');
     }
