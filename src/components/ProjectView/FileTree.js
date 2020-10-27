@@ -2,10 +2,28 @@ import React, {useEffect, useState} from 'react';
 import Container from '@material-ui/core/Container';
 import { Listing, Entry, Icon, Name, LastSaved } from "@nteract/directory-listing";
 import {useHistory} from 'react-router-dom'
+import {makeStyles} from '@material-ui/core';
+
+const useStyles = makeStyles((theme) => ({
+    pathDiv: {
+        display: 'flex',
+        flexDirection: 'row',
+        height: '40px',
+        color: 'rgba(67, 67, 67, 0.8)',
+        fontWeight: 'bold'
+    },
+    pathItem: {
+        cursor: 'pointer',
+        marginRight: '5px',
+        marginLeft: '5px',
+    },
+
+}));
 const FileTree = (props) => {
-    const {codeTree} = props
+    const {id, codeTree} = props
     const [curPath, setCurPath] = useState([])
     const [curDir, setCurDir] = useState(null)
+    const classes = useStyles();
     const history = useHistory()
     useEffect(() => {
         explore_path(curPath, codeTree.children);
@@ -41,18 +59,46 @@ const FileTree = (props) => {
         let cur_path = curPath.slice();
         cur_path.push(name);
         setCurPath(cur_path);
-        let path_with_slash ='/'+ name + '/';
-        history.push(path_with_slash);
+        // let path_with_slash = id + '/' + name + '/';
+        // history.push(path_with_slash);
     }
     const handle_back = () => {
         let cur_path = curPath.slice();
         cur_path.pop();
         setCurPath(cur_path);
-        history.goBack()
+        // history.goBack()
     }
+
     if(codeTree) {
         return (
             <Container>
+                <div className={classes.pathDiv}>
+                    <div>
+                    <a className={classes.pathItem} 
+                    onClick={() => {
+                        setCurPath([])
+                    }}>
+                        {codeTree.name}
+                    </a>
+                    /
+                    </div>
+                    
+                    {curPath.map((item, index) => {
+                        return (
+                            <div>
+
+                            <a key={index} className={classes.pathItem}
+                            onClick={() => {
+                                const path_new = curPath.slice(0, index+1);
+                                setCurPath(path_new)
+                            }}>
+                            {item}
+                            </a> 
+                            /
+                            </div>
+                        )
+                    })}
+                </div>
                 <Listing>
                     {curPath.length === 0 ? null : 
                     <Entry fileType={"directory"}>

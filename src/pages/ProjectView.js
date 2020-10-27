@@ -66,12 +66,16 @@ const ProjectView = (props) => {
     };
     const handleChange = (event, newValue) => {
         setValue(newValue);
+        // if(newValue === 0) {
+        //     if(history.location.pathname !== '/project/'+params.id) {
+        //         history.replace('/project/'+params.id, '/')
+        //     }
+        // }
       };
     const request_get_schema = async (id) => {
         try {
             const response = await request('get', '/project/info/'+id+'/')
             if(response.status === 200) {
-                console.log(response.data.code_tree)
                 setSchemaData(response.data.schema)
                 setCodeTree(response.data.code_tree)
                 setData(createData(id, response.data.name, response.data.author_info.username,  response.data.description, response.data.wrote_on))
@@ -123,7 +127,7 @@ const ProjectView = (props) => {
                 <Schema schemaData={schemaData}/>
             </TabPanel>
             <TabPanel value={value} index={1}>
-                <Code codeTree={codeTree}/>
+                <Code id={params.id} codeTree={codeTree}/>
             </TabPanel>
         </div>
     );

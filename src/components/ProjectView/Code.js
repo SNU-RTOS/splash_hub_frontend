@@ -1,9 +1,9 @@
 import React from 'react';
 import FileTree from './FileTree';
 const Code = (props) => {
-    const {codeTree} = props
+    const {id, codeTree} = props
     return (
-        <FileTree codeTree={codeTree}></FileTree>
+        <FileTree id={id} codeTree={codeTree}></FileTree>
     );
 };
 

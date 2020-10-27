@@ -1043,7 +1043,6 @@ function handleModelChange(changes) {
             factory_mode_select_map.set(node.part.data.key, 0);
             var MODE_AREA_NAME_ARRAY = ["MODE_A", "MODE_B", "MODE_C", "MODE_D"];
             if(node.part.data.mode_configuration) {
-                console.log(node.part.data.mode_configuration)
                 for(var i = 0; i < node.part.data.mode_configuration.mode_list.length; i++) {
                     let obj = node.findObject(MODE_AREA_NAME_ARRAY[i])
                     obj.visible = true;
