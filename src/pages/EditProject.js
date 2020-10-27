@@ -14,6 +14,7 @@ import {useHistory} from "react-router-dom";
 
 import {request} from '../utils/axios';
 import ChannelConfigurationModal from '../components/EditProject/ChannelConfigurationModal';
+import ModeConfigurationModal from '../components/EditProject/ModeConfigurationModal';
 function CustomLayout() {
     go.Layout.call(this);
 }
@@ -116,7 +117,7 @@ let myChangingModel = false;
 
 let externalDroppedObjectName = "NONE";
 let internalSelectedObjectName = "NONE";
-
+let isDragging = false;
 var highlighted_factory = null;
 var buildUnit_dragging = false;
 var configuring_fusionRule = false;
@@ -149,63 +150,63 @@ function makeVisibleRecursive(child, visible) {
 }
 var current_factoryKey;
 
-        function saveFactory(e, obj) {
-          // get the context menu that holds the button that was clicked
-          var contextmenu = obj.part;
-          // get the node data to which the Node is data bound
-          var nodedata = contextmenu.data;
-          current_factoryKey = contextmenu.key;
+function saveFactory(e, obj) {
+    // get the context menu that holds the button that was clicked
+    var contextmenu = obj.part;
+    // get the node data to which the Node is data bound
+    var nodedata = contextmenu.data;
+    current_factoryKey = contextmenu.key;
 
-          var copiedModel = new go.GraphLinksModel(e.diagram.model.nodeDataArray, myDiagram.model.linkDataArray);
+    var copiedModel = new go.GraphLinksModel(e.diagram.model.nodeDataArray, myDiagram.model.linkDataArray);
 
 
-          var new_nodeDataArray = copiedModel.nodeDataArray.filter(factoryRelatedNode);
-          var new_linkDataArray = copiedModel.linkDataArray.filter(factoryRelatedNode);
+    var new_nodeDataArray = copiedModel.nodeDataArray.filter(factoryRelatedNode);
+    var new_linkDataArray = copiedModel.linkDataArray.filter(factoryRelatedNode);
 
-          var factoryModel = new go.GraphLinksModel(new_nodeDataArray, new_linkDataArray);
- 
-          var blob = new Blob([factoryModel.toJson()], {type: "application/json"});
-                           
+    var factoryModel = new go.GraphLinksModel(new_nodeDataArray, new_linkDataArray);
+
+    var blob = new Blob([factoryModel.toJson()], {type: "application/json"});
+                    
+}
+
+function factoryRelatedNode(value) {
+    var condition;
+    if(value.key === current_factoryKey || value.group === current_factoryKey) {
+        console.log(current_factoryKey +"=?"+value.key);
+        console.log(current_factoryKey +"=?"+value.group);
+        condition = true; 
+    } else condition = false;
+    
+    return condition;
+}
+
+function highlightFactory(e, grp, show) { 
+    console.log("highlightFactory")
+    if (!grp) return;
+    e.handled = true;
+    if (show) {
+        highlighted_factory = grp;
+        // cannot depend on the grp.diagram.selection in the case of external drag-and-drops;
+        // instead depend on the DraggingTool.draggedParts or .copiedParts
+        var tool = grp.diagram.toolManager.draggingTool;
+        var map = tool.draggedParts || tool.copiedParts;  // this is a Map
+        // now we can check to see if the Group will accept membership of the dragged Parts
+        if (grp.canAddMembers(map.toKeySet())) {
+            return;
         }
-
-        function factoryRelatedNode(value) {
-          var condition;
-          if(value.key === current_factoryKey || value.group === current_factoryKey) {
-            console.log(current_factoryKey +"=?"+value.key);
-            console.log(current_factoryKey +"=?"+value.group);
-            condition = true; 
-          } else condition = false;
-          
-          return condition;
+    }
+    else {
+        if(!buildUnit_dragging) {
+            highlighted_factory = null;
         }
+    }
+    grp.findObject("SHAPE").fill = "white";
+    grp.findObject("AREA_STREAM_OUTPUT_PORT").fill = null;
+    grp.findObject("AREA_STREAM_INPUT_PORT").fill = null;
+//   grp.findObject("AREA_EVENT_PORT").fill = null;
+    grp.findObject("AREA_MODECHANGE_PORT").fill = null;
 
-        function highlightFactory(e, grp, show) { 
-          console.log("highlightFactory")
-          if (!grp) return;
-          e.handled = true;
-          if (show) {
-            highlighted_factory = grp;
-            // cannot depend on the grp.diagram.selection in the case of external drag-and-drops;
-            // instead depend on the DraggingTool.draggedParts or .copiedParts
-            var tool = grp.diagram.toolManager.draggingTool;
-            var map = tool.draggedParts || tool.copiedParts;  // this is a Map
-            // now we can check to see if the Group will accept membership of the dragged Parts
-            if (grp.canAddMembers(map.toKeySet())) {
-              return;
-            }
-          }
-          else {
-            if(!buildUnit_dragging) {
-                highlighted_factory = null;
-            }
-          }
-          grp.findObject("SHAPE").fill = "white";
-          grp.findObject("AREA_STREAM_OUTPUT_PORT").fill = null;
-          grp.findObject("AREA_STREAM_INPUT_PORT").fill = null;
-        //   grp.findObject("AREA_EVENT_PORT").fill = null;
-          grp.findObject("AREA_MODECHANGE_PORT").fill = null;
-
-        };
+};
 function selectMode(mode_index, mode, obj) {
     obj.panel.findObject("MODE_A").findObject("TEXT").stroke = "black"
     obj.panel.findObject("MODE_A").findObject("TEXT").font = "normal 10pt sans-serif"
@@ -806,63 +807,11 @@ function unsetBuildUnit_contextMenu_in_selectionPane(e, obj) {
     var node = e.diagram.findNodeForKey(obj.part.key);
     e.diagram.remove(node);
 }
-    
-
 function updateCurrentObject(part) {
     console.log('updateCurrentObject()');
     relocatePort(part);
 }
-function configureFusionRule_contextMenu(e, obj) {
-    toggleFusionOperatorWindow();
-    var name = obj.part.key;
-    selected_fusion_operator = name;
-    document.getElementById("selected_fusionOperator").value = name;
-    var confirm = document.getElementById("myInfo_fusionOperator_btn_confirm");
-    var optional_ports, mandatory_ports, threshold, correlation;
-    
-    var select_option_left = document.getElementById("myInfo_fusionOperator_mandatory_ports_leftValues");
-    var length = select_option_left.options.length;
-    for (var i = length-1; i >= 0; i--) {
-        select_option_left.options[i] = null;
-    }
-    var select_option_right = document.getElementById("myInfo_fusionOperator_mandatory_ports_rightValues");
-    var length2 = select_option_right.options.length;
-    for (var i = length2-1; i >= 0; i--) {
-        select_option_right.options[i] = null;
-    }
-    var btn_moveright = document.getElementById("myInfo_fusionOperator_mandatory_ports_add");
-    var btn_moveleft = document.getElementById("myInfo_fusionOperator_mandatory_ports_del");
 
-    btn_moveleft.onclick = function(e) {
-        var option = select_option_right.options[select_option_right.selectedIndex];
-        select_option_right.removeChild(option);
-        select_option_left.appendChild(option);
-    }
-    btn_moveright.onclick = function(e) { 
-        var option = select_option_left.options[select_option_left.selectedIndex];
-        select_option_left.removeChild(option);
-        select_option_right.appendChild(option);
-    };
-    
-    loadFusionRule(obj)
-    confirm.addEventListener('click', confirmFusionRule);
-}
-function configureMode_contextMenu(e, obj) {
-    toggleModeConfigurationWindow();
-    var name = obj.part.key;
-    origin_data = JSON.parse(JSON.stringify(obj.part.data.mode_configuration));
-    console.log(name)
-    document.getElementById("selected_factory").value = name;
-    var btn_confirm = document.getElementById("myInfo_modeConfiguration_btn_confirm");
-    var btn_addMode = document.getElementById("myInfo_modeConfiguration_btn_addMode");
-    var btn_addEvent = document.getElementById("myInfo_modeConfiguration_btn_addEvent");
-    var btn_cancel = document.getElementById("myInfo_modeConfiguration_btn_cancel");
-    loadModeInfo(obj)
-    btn_confirm.addEventListener('click', confirmModeConfiguration);
-    btn_addMode.addEventListener('click', addMode);
-    btn_addEvent.addEventListener('click', addEvent);
-    btn_cancel.addEventListener('click', cancelModeConfiguration);
-}
 function loadFusionRule(obj) {
     var select_option_left = document.getElementById("myInfo_fusionOperator_mandatory_ports_leftValues");
     var select_option_right = document.getElementById("myInfo_fusionOperator_mandatory_ports_rightValues");
@@ -937,219 +886,8 @@ function saveFusionRule(name, optional_ports, mandatory_ports, threshold, correl
     myDiagram.model.setDataProperty(myDiagram.model.findNodeDataForKey(name), "fusionRule", new_data)
     var btn = document.getElementById("myInfo_fusionOperator_btn_confirm");
     btn.removeEventListener("click", confirmFusionRule)
-    toggleFusionOperatorWindow();
 }
-function loadModeInfo(obj) {
-    // var select_option_event = document.getElementById("myInfo_modeConfiguration_event_list");
-    var table_event = document.getElementById("myInfo_modeConfiguration_event_table").getElementsByTagName('tbody')[0];
 
-    // var prev_options = select_option_event.options;
-    // for(var i = prev_options.length - 1; i >= 0; i--) {
-    //     prev_options.remove(i);
-    // }
-    table_event.innerHTML = ""
-
-    var table_mode = document.getElementById("myInfo_modeConfiguration_mode_table");
-    var table_mode_ref = table_mode.getElementsByTagName('tbody')[0];
-    table_mode_ref.innerHTML = ""
-    set_mode = new Set();
-    set_event = new Set();
-    obj.part.data.mode_configuration.mode_list.forEach(function(mode) {
-        set_mode.add(mode.name);
-        mode.events.forEach(function(event) {
-            set_event.add(event.name)
-            var option_text = "";
-            obj.part.data.mode_configuration.mode_list.forEach(function(mode2) {
-                option_text += "<option>{0}</option>".format(mode2.name);
-            });
-            
-            var content = "<tr>\
-            <td class=\"myInfo_modeConfiguration_mode_table_col1\">\
-            {0}\
-            </td>\
-            <td class=\"myInfo_modeConfiguration_mode_table_col2\">\
-            <button class=\"btn\"><i class=\"fa fa-pencil\"></i></button>\
-            </td>\
-            <td class=\"myInfo_modeConfiguration_mode_table_col3\">{1}</td>\
-            <td class=\"myInfo_modeConfiguration_mode_table_col4\">\
-                <select name=\"myInfo_modeConfiguration_mode_select_event\">\
-                {2}\
-                </select>\
-            </td>\
-            <td class=\"myInfo_modeConfiguration_mode_table_col5\">\
-                <input type=\"checkbox\" name=\"output\" {3}/>\
-            </td>\
-            <td class=\"myInfo_modeConfiguration_mode_table_col6\">\
-                <button class=\"btn\"><i class=\"fa fa-trash\"></i></button>\
-            </td>\
-            </tr>".format(mode.name, event.name, option_text, event.output_internal_data_items ? "checked" : "" );
-            
-            var newRow = table_mode_ref.insertRow(table_mode_ref.rows.length);
-            newRow.innerHTML = content;
-            var select_tag = newRow.cells[3].getElementsByTagName('select')[0]
-            for(var j = 0; j < select_tag.options.length; j++) {
-                if(select_tag.options[j].text === event.next_mode) {
-                    select_tag.options[j].selected = true;
-                }
-            }
-            newRow.getElementsByTagName("select")[0].addEventListener('change', handleSelectChange);
-            newRow.getElementsByTagName("input")[0].addEventListener('click', handleCheckboxChange);
-            newRow.getElementsByTagName("button")[0].addEventListener('click', openEditModeNameWindow);
-            newRow.getElementsByTagName("button")[1].addEventListener('click', deleteMode);
-        })
-    })
-    console.log(set_event)
-    // load event list
-    set_event.forEach(function(event) {
-        // var option = document.createElement("option");
-        // option.text = event;
-        // select_option_event.add(option);
-
-        var newRow = table_event.insertRow(table_event.rows.length);
-        var content = "<tr>\
-            <td class=\"myInfo_modeConfiguration_event_table_col1\">\
-                {0}\
-            </td>\
-            <td class=\"myInfo_modeConfiguration_event_table_col2\">\
-                <button class=\"btn\"><i class=\"fa fa-pencil\"></i></button>\
-            </td>\
-            <td class=\"myInfo_modeConfiguration_event_table_col3\">\
-                <button class=\"btn\"><i class=\"fa fa-trash\"></i></button>\
-            </td>\
-        </tr>".format(event)
-        newRow.innerHTML = content;
-        newRow.getElementsByTagName("button")[0].addEventListener('click', openEditEventNameWindow);
-        newRow.getElementsByTagName("button")[1].addEventListener('click', deleteEvent);
-    })
-}
-function confirmModeConfiguration() {     
-    var factory = document.getElementById("selected_factory").value;
-    var factory_nodedata = myDiagram.model.findNodeDataForKey(factory);
-    
-    
-    
-    if(factory_nodedata.mode_configuration.mode_list.length === 0) {
-        myDiagram.nodes.each(function(node){ 
-            console.log(node.part.data.category)
-            if(node.part.data.group === factory && node.part.data.category === "modeChangeInputPort") {
-                myDiagram.remove(node);
-            } 
-        })
-    }
-    else {
-        var new_data = JSON.parse(JSON.stringify(factory_nodedata.mode_configuration));
-        new_data.initial_mode = new_data.mode_list[0].name
-        myDiagram.model.setDataProperty(factory_nodedata, "mode_configuration", new_data)
-    }
-    toggleModeConfigurationWindow();
-}
-function cancelModeConfiguration() {
-    myDiagram.model.setDataProperty(myDiagram.model.findNodeDataForKey(document.getElementById("selected_factory").value), "mode_configuration", origin_data)
-    toggleModeConfigurationWindow();
-}
-function toggleFusionOperatorWindow() {
-    //console.log("toggleFusionOperatorWindow()");
-    var fusionOperatorWindow = document.getElementById("infoDraggable_fusionOperator");
-    var visible = fusionOperatorWindow.style.visibility;
-    var warning_text = document.getElementById("myInfo_fusionOperator_text_syntax");
-    warning_text.innerHTML = "Incorrect fusion rule";
-    if(visible === "visible") {
-        fusionOperatorWindow.style.visibility = "hidden";
-    }
-    else {
-        fusionOperatorWindow.style.visibility = "visible";
-    }
-    warning_text.style.visibility = "hidden";
-}
-function toggleModeConfigurationWindow() {
-    //console.log("toggleFusionOperatorWindow()");
-    var modeConfigurationWindow = document.getElementById("infoDraggable_modeConfiguration");
-    var visible = modeConfigurationWindow.style.visibility;
-    if(visible === "visible") {
-        modeConfigurationWindow.style.visibility = "hidden";
-    }
-    else {
-      modeConfigurationWindow.style.visibility = "visible";
-    }
-}
-function isNotConfiguringFusionRule() {
-      return !configuring_fusionRule;
-}
-function openEditEventNameWindow(event) {
-    var new_name = "";
-    var target = event.target.parentElement.parentElement;
-    var old_name = "";
-    
-    if(target.tagName === "TD") 
-        target = target.parentElement;
-    old_name = target.cells[0].innerHTML.trim();
-    var factory = document.getElementById("selected_factory").value;
-    var factory_nodedata = myDiagram.findNodeForKey(factory);
-    
-    while(true) {
-        new_name = prompt("New event name is", old_name);
-        var flag = false;
-        if(new_name === null) {
-            return false;
-        }
-        if(new_name === "") {
-            alert("Empty name!")
-            continue;
-        }
-        else if(new_name === old_name) {
-            return false;
-        }
-        factory_nodedata.part.data.mode_configuration.mode_list.forEach(function(mode) {
-            mode.events.forEach(function(evt) {
-                if(evt.name === new_name) {
-                    flag = true;
-                }
-            })
-        })
-        if(flag)
-            alert("Already Exists");
-        else { 
-            var new_data = JSON.parse(JSON.stringify(factory_nodedata.part.data.mode_configuration));
-            new_data.mode_list.forEach(function(mode) {
-                mode.events.forEach(function(event) {
-                    if(event.name === old_name) {
-                        event.name = new_name;
-                    }
-                })
-            })
-            myDiagram.model.setDataProperty(factory_nodedata.part.data, "mode_configuration", new_data);
-            loadModeInfo(factory_nodedata);
-            break;
-        }
-    }
-
-}
-function deleteEvent(event) {
-    var result = window.confirm("Delete this event?");
-    
-    if(result) {
-        var target = event.target.parentElement.parentElement;
-        if(target.tagName === "TD") 
-            target = target.parentElement;
-        var event_name = target.cells[0].innerHTML.trim();
-        var factory = document.getElementById("selected_factory").value;
-        var factory_nodedata = myDiagram.findNodeForKey(factory);
-        var new_data = JSON.parse(JSON.stringify(factory_nodedata.part.data.mode_configuration));
-        
-        new_data.mode_list.forEach(function(mode) {
-            mode.events = mode.events.filter(function(event) {
-                return event.name !== event_name;
-            })
-        })
-        new_data.mode_list = new_data.mode_list.filter(function(mode) {
-            return mode.events.length > 0;
-        })
-        myDiagram.model.setDataProperty(factory_nodedata.part.data, "mode_configuration", new_data);
-        loadModeInfo(factory_nodedata);
-        
-    }
-}
-var current_processingComponentKey;
 function checkFusionRule(data) {
     var text = document.getElementById("myInfo_fusionOperator_text_syntax");
     
@@ -1175,311 +913,6 @@ function checkFusionRule(data) {
     }
     return true;
 }
-function addEvent() {
-    // var select_option_event = document.getElementById("myInfo_modeConfiguration_event_list");
-    var table_event = document.getElementById("myInfo_modeConfiguration_event_table");
-    var table_mode = document.getElementById("myInfo_modeConfiguration_mode_table");
-    var table_mode_ref = table_mode.getElementsByTagName('tbody')[0];
-    var table_event_ref = table_event.getElementsByTagName('tbody')[0];
-    var event_name = document.getElementById("myInfo_modeConfiguration_input_event").value;
-
-
-    // var options = select_option_event.options;
-    var option_text = "";
-    if(set_event.has(event_name) || event_name === "") return;
-    document.getElementById("myInfo_modeConfiguration_input_event").value = "";
-    // var new_option = document.createElement("option");
-    // new_option.text = event_name;
-    // select_option_event.add(new_option);
-    var newRow_event = table_event.insertRow(table_event.rows.length);
-    var event_content = "<tr>\
-        <td class=\"myInfo_modeConfiguration_event_table_col1\">\
-            {0}\
-        </td>\
-        <td class=\"myInfo_modeConfiguration_event_table_col2\">\
-            <button class=\"btn\"><i class=\"fa fa-pencil\"></i></button>\
-        </td>\
-        <td class=\"myInfo_modeConfiguration_event_table_col3\">\
-            <button class=\"btn\"><i class=\"fa fa-trash\"></i></button>\
-        </td>\
-    </tr>".format(event_name)
-    newRow_event.innerHTML = event_content;
-    newRow_event.getElementsByTagName("button")[0].addEventListener('click', openEditEventNameWindow);
-    newRow_event.getElementsByTagName("button")[1].addEventListener('click', deleteEvent);
-    set_mode.forEach(function(mode) {
-        option_text += "<option>{0}</option>".format(mode);
-    })
-    var obj = myDiagram.model.findNodeDataForKey(document.getElementById("selected_factory").value);
-    var new_data = JSON.parse(JSON.stringify(obj.mode_configuration));
-    new_data.mode_list.forEach(function(mode) {
-        mode.events.push({"name": event_name, "next_mode": mode.name, "output_internal_data_items": false});
-    })
-    myDiagram.model.setDataProperty(obj, "mode_configuration", new_data)
-    table_mode_ref.innerHTML = ""
-    obj.mode_configuration.mode_list.forEach(function(mode) {
-        mode.events.forEach(function(event) {
-            set_event.add(event.name)
-            var option_text = "";
-            obj.mode_configuration.mode_list.forEach(function(mode2) {
-                if(event.next_mode === mode2.name) {
-                    option_text += "<option selected=\"selected\">{0}</option>".format(mode2.name);
-                }
-                else {
-                    option_text += "<option>{0}</option>".format(mode2.name);
-                }
-            });
-            var content = "<tr>\
-                <td class=\"myInfo_modeConfiguration_mode_table_col1\">\
-                {0}\
-                </td>\
-                <td class=\"myInfo_modeConfiguration_mode_table_col2\">\
-                <button class=\"btn\"><i class=\"fa fa-pencil\"></i></button>\
-                </td>\
-                <td class=\"myInfo_modeConfiguration_mode_table_col3\">{1}</td>\
-                <td class=\"myInfo_modeConfiguration_mode_table_col4\">\
-                    <select name=\"myInfo_modeConfiguration_mode_select_event\">\
-                    {2}\
-                    </select>\
-                </td>\
-                <td class=\"myInfo_modeConfiguration_mode_table_col5\">\
-                    <input type=\"checkbox\" name=\"output\" {3}/>\
-                </td>\
-                <td class=\"myInfo_modeConfiguration_mode_table_col6\">\
-                    <button class=\"btn\"><i class=\"fa fa-trash\"></i></button>\
-                </td>\
-                </tr>".format(mode.name, event.name, option_text, event.output_internal_data_items ? "checked" : "");
-            var newRow = table_mode_ref.insertRow(table_mode_ref.rows.length);
-            newRow.innerHTML = content;
-            newRow.getElementsByTagName("select")[0].addEventListener('change', handleSelectChange);
-            newRow.getElementsByTagName("input")[0].addEventListener('click', handleCheckboxChange);
-            newRow.getElementsByTagName("button")[0].addEventListener('click', openEditModeNameWindow);
-            newRow.getElementsByTagName("button")[1].addEventListener('click', deleteMode);
-        })
-    })
-}
-
-function addMode() {
-    // var select_option_event = document.getElementById("myInfo_modeConfiguration_event_list");
-    var table_mode = document.getElementById("myInfo_modeConfiguration_mode_table");
-    var table_event = document.getElementById("myInfo_modeConfiguration_event_table");
-    var table_mode_ref = table_mode.getElementsByTagName('tbody')[0];
-    var table_event_ref = table_event.getElementsByTagName('tbody')[0];
-    var mode_name = document.getElementById("myInfo_modeConfiguration_input_mode").value;
-    if(set_mode.length === 4) return; 
-    if(set_mode.has(mode_name) || mode_name === "") return;
-
-    document.getElementById("myInfo_modeConfiguration_input_mode").value = "";
-    // var options = select_option_event.options;
-    var option_text = "";
-    set_mode.add(mode_name)
-    set_mode.forEach(function(mode) {
-        if(mode === mode_name) {
-            option_text += "<option selected=\"selected\">{0}</option>".format(mode);
-        }
-        else {
-            option_text += "<option>{0}</option>".format(mode);
-        }
-    })
-    sync_mode_select(option_text);
-    var events_data = [];
-    for(var i = 0; i < table_event_ref.rows.length; i++) {
-        var content = "<tr>\
-            <td class=\"myInfo_modeConfiguration_mode_table_col1\">\
-            {0}\
-            </td>\
-            <td class=\"myInfo_modeConfiguration_mode_table_col2\">\
-            <button class=\"btn\"><i class=\"fa fa-pencil\"></i></button>\
-            </td>\
-            <td class=\"myInfo_modeConfiguration_mode_table_col3\">{1}</td>\
-            <td class=\"myInfo_modeConfiguration_mode_table_col4\">\
-                <select name=\"myInfo_modeConfiguration_mode_select_event\">\
-                {2}\
-                </select>\
-            </td>\
-            <td class=\"myInfo_modeConfiguration_mode_table_col5\">\
-                <input type=\"checkbox\" name=\"output\"/>\
-            </td>\
-            <td class=\"myInfo_modeConfiguration_mode_table_col6\">\
-                <button class=\"btn\"><i class=\"fa fa-trash\"></i></button>\
-            </td>\
-            </tr>".format(mode_name, table_event_ref.rows[i].cells[0].innerHTML, option_text);
-        var newRow = table_mode_ref.insertRow(table_mode_ref.rows.length);
-        newRow.innerHTML = content;
-        newRow.getElementsByTagName("select")[0].addEventListener('change', handleSelectChange);
-        newRow.getElementsByTagName("input")[0].addEventListener('click', handleCheckboxChange);
-        newRow.getElementsByTagName("button")[0].addEventListener('click', openEditModeNameWindow);
-        newRow.getElementsByTagName("button")[1].addEventListener('click', deleteMode);
-        events_data.push({"name": table_event_ref.rows[i].cells[0].innerHTML.trim(), "next_mode": mode_name, "output_internal_data_items": false});
-    }
-    
-    var obj = myDiagram.model.findNodeDataForKey(document.getElementById("selected_factory").value);
-    var new_data = JSON.parse(JSON.stringify(obj.mode_configuration));
-    new_data.mode_list.push({"name": mode_name, "events": events_data});
-    myDiagram.model.setDataProperty(obj, "mode_configuration", new_data)
-}
-function sync_mode_select(option_text) {
-    var table_mode = document.getElementById("myInfo_modeConfiguration_mode_table").getElementsByTagName('tbody')[0];
-    for (var i = 0, row; row = table_mode.rows[i]; i++) {
-        var select_tag = row.cells[3].getElementsByTagName('select')[0]
-        var selected = select_tag.options[select_tag.selectedIndex].text;
-        row.cells[3].innerHTML = "<td class=\"myInfo_modeConfiguration_mode_table_col3\">\
-                <select name=\"myInfo_modeConfiguration_mode_select_event\">\
-                {0}\
-                </select>\
-            </td>".format(option_text)
-        select_tag = row.cells[3].getElementsByTagName('select')[0]
-        for(var j = 0; j < select_tag.options.length; j++) {
-            if(select_tag.options[j].text === selected) {
-                select_tag.options[j].selected = true;
-            }
-        }
-        row.cells[3].getElementsByTagName("select")[0].addEventListener('change', handleSelectChange);
-        row.cells[4].getElementsByTagName("input")[0].addEventListener('click', handleCheckboxChange);
-        row.getElementsByTagName("button")[0].addEventListener('click', openEditModeNameWindow);
-        row.getElementsByTagName("button")[1].addEventListener('click', deleteMode);
-    }
-   
-}
-function handleSelectChange(event) {
-    var selectElement = event.target;
-    var value = selectElement.value;
-    var parentElement = selectElement.parentElement.parentElement;
-    var mode_name = parentElement.cells[0].innerHTML;
-    var event_name = parentElement.cells[2].innerHTML;
-    var obj = myDiagram.model.findNodeDataForKey(document.getElementById("selected_factory").value);
-    var new_data = JSON.parse(JSON.stringify(obj.mode_configuration));
-    new_data.mode_list.forEach(function(mode) {
-        if(mode.name === mode_name.trim()) { 
-            mode.events.forEach(function(event) {
-            if(event.name === event_name.trim()) {
-                event.next_mode = value;
-                return false;
-            }
-        })
-        }
-    })
-    myDiagram.model.setDataProperty(obj, "mode_configuration", new_data)
-}
-function handleCheckboxChange(event) {
-    var selectElement = event.target;
-    var value = selectElement.checked;
-    var parentElement = selectElement.parentElement.parentElement;
-    var mode_name = parentElement.cells[0].innerHTML;
-    var event_name = parentElement.cells[2].innerHTML;
-    var obj = myDiagram.model.findNodeDataForKey(document.getElementById("selected_factory").value);
-    var new_data = JSON.parse(JSON.stringify(obj.mode_configuration));
-    new_data.mode_list.forEach(function(mode) {
-        if(mode.name === mode_name.trim()) {
-            mode.events.forEach(function(event) {
-                if(event.name === event_name) {
-                    console.log(value)
-                    event.output_internal_data_items = value;
-                    return false;
-                }
-            })
-        }
-    })
-    myDiagram.model.setDataProperty(obj, "mode_configuration", new_data)
-}
-function openEditModeNameWindow(event) {
-    var new_name = "";
-    var target = event.target.parentElement.parentElement;
-    var old_name = "";
-    
-    if(target.tagName === "TD") 
-        target = target.parentElement;
-    old_name = target.cells[0].innerHTML.trim();
-    var factory = document.getElementById("selected_factory").value;
-    var factory_nodedata = myDiagram.findNodeForKey(factory);
-    
-    while(true) {
-        new_name = prompt("New mode name is", old_name);
-        var flag = false;
-        if(new_name === null) {
-            return false;
-        }
-        if(new_name === "") {
-            alert("Empty name!")
-            continue;
-        }
-        else if(new_name === old_name) {
-            return false;
-        }
-        factory_nodedata.part.data.mode_configuration.mode_list.forEach(function(mode) {
-            if(mode.name === new_name) {
-                flag = true;
-                return false;
-            }
-        })
-        if(flag)
-            alert("Already Exists");
-        else { 
-            var new_data = JSON.parse(JSON.stringify(factory_nodedata.part.data.mode_configuration));
-            new_data.mode_list.forEach(function(mode) {
-                if(mode.name === old_name) {
-                    mode.name = new_name;
-                }
-                mode.events.forEach(function(event) {
-                    if(event.next_mode === old_name) {
-                        event.next_mode = new_name;
-                    }
-                })
-            })
-            myDiagram.model.setDataProperty(factory_nodedata.part.data, "mode_configuration", new_data);
-            myDiagram.nodes.each(function(node) {
-                if(node.part.data.group === factory) {
-                    if(node.part.data.mode === old_name) {
-                        myDiagram.model.setDataProperty(node.part.data, "mode", new_name)
-                    }
-                }
-            })
-            loadModeInfo(factory_nodedata);
-            break;
-        }
-    }
-
-}
-function deleteMode(event) {
-    var result = window.confirm("Delete this mode?");
-    
-    if(result) {
-        var target = event.target.parentElement.parentElement;
-        if(target.tagName === "TD") 
-            target = target.parentElement;
-        var mode_name = target.cells[0].innerHTML.trim();
-        var factory = document.getElementById("selected_factory").value;
-
-        var flag = false;
-        myDiagram.nodes.each(function(node) {
-                if(node.part.data.group === factory) {
-                    if(node.part.data.mode === mode_name) {
-                        flag = true;
-                        return false;
-                    }
-                }
-            })
-        if(flag) {
-            alert("You cannot delete this mode");
-            return;
-        }
-        var factory_nodedata = myDiagram.findNodeForKey(factory);
-        var new_data = JSON.parse(JSON.stringify(factory_nodedata.part.data.mode_configuration));
-        var del_index = -1;
-
-        new_data.mode_list = new_data.mode_list.filter(function(mode) {
-            return mode.name !== mode_name
-        })
-
-        new_data.mode_list.forEach(function(mode) {
-            mode.events = mode.events.filter(function(event) {
-                return event.next_mode !== mode_name;
-            })
-        })
-        myDiagram.model.setDataProperty(factory_nodedata.part.data, "mode_configuration", new_data);
-        loadModeInfo(factory_nodedata);
-    }
-}
-
 function isChannelExisting(channel) {
     var flag = false;
     myDiagram.nodes.each(function(node) {
@@ -1582,11 +1015,15 @@ const useStyles = makeStyles((theme) => ({
 const EditProject = (props) => {
     const history = useHistory();
     const classes = useStyles();
-    const [nodeDataArray, setNodeDataArray] = useState([]);
-    const [linkDataArray, setLinkDataArray] = useState([]);
+    const [nodeDataArray, setNodeDataArray] = useState(null);
+    const [linkDataArray, setLinkDataArray] = useState(null);
     const [isReady, setIsReady] = useState(false);
     const [channelModalOpen, setChannelModalOpen] = useState(false);
+    const [modeModalOpen, setModeModalOpen] = useState(false);
+    const [fusionModalOpen, setFusionModalOpen] = useState(false);
     const [channelConfigured, setChannelConfigured] = useState(null);
+    const [factoryConfigured, setFactoryConfigured] = useState(null);
+    const [fusionConfigured, setFusionConfigured] = useState(null);
     const handleOpenChannelModal = () => {
         setChannelModalOpen(true);
     };
@@ -1609,6 +1046,32 @@ const EditProject = (props) => {
         setChannelModalOpen(false);
         setChannelConfigured(null);
     }
+    const handleOpenFusionModal = () => {
+        setFusionModalOpen(true);
+    };
+
+    const handleCloseFusionModal = () => {
+        setFusionModalOpen(false);
+        setFusionConfigured(null);
+    };
+    const handleConfirmFusionModal = () => {
+    }
+    const handleOpenModeModal = () => {
+        setModeModalOpen(true);
+    };
+
+    const handleCloseModeModal = () => {
+        setModeModalOpen(false);
+        setFactoryConfigured(null);
+    };
+    const handleConfirmModeModal = (modeList) => {
+        const mode_configuration = JSON.parse(JSON.stringify(factoryConfigured.mode_configuration));
+        mode_configuration.mode_list = modeList;
+        myDiagram.model.setDataProperty(factoryConfigured, "mode_configuration", mode_configuration)
+        setModeModalOpen(false);
+        setFactoryConfigured(null);
+    }
+
     useEffect(() => {
         if(!props.location.state) {
             history.push('/projects/')
@@ -1654,18 +1117,18 @@ const EditProject = (props) => {
         setNodeDataArray(myDiagram.nodes)
         setLinkDataArray(myDiagram.links)
         myDiagram.nodes.each(function(node) {
+            if(node.part.data.category ==="buildUnit") {
+                var flag = false;
+                myDiagram.nodes.each(function(node2) {
+                    if(node2.part.data.buildUnit === node.part.data.key && !node2.visible) {
+                        flag = true;
+                        return false;
+                    }  
+                })
+                node.visible = !flag;
+                return false;
+            }
             if(node.part.data.category === "factory") {
-                if(node.part.data.category ==="buildUnit") {
-                    var flag = false;
-                    myDiagram.nodes.each(function(node2) {
-                        if(node2.part.data.buildUnit === node.part.data.key && !node2.visible) {
-                            flag = true;
-                            return false;
-                        }  
-                    })
-                    node.visible = !flag;
-                    return false;
-                }
                 factory_mode_select_map.set(node.part.data.key, 0);
                 var MODE_AREA_NAME_ARRAY = ["MODE_A", "MODE_B", "MODE_C", "MODE_D"];
                 if(node.part.data.mode_configuration) {
@@ -1674,7 +1137,6 @@ const EditProject = (props) => {
                         obj.visible = true;
                         selectMode(0, "MODE_A", obj);
                     }
-                
                     node.memberParts.each(function(node2) {
                         if(node2.part.data.category === "modeChangeInputPort") {
                             return;   
@@ -1683,19 +1145,19 @@ const EditProject = (props) => {
                             return
                         }  
                         if(node2.part.data.mode !== node.part.data.mode_configuration.initial_mode) {
-                            // node2.visible = false;
-                            // if(!node2.part.memberParts) return;
-                            // node2.part.memberParts.each(function(member) {
-                            //     member.visible = false;    
-                            //     myDiagram.links.each(function(link) {
-                            //         if(link.part.data.to === member.key) {
-                            //             link.visible = false;
-                            //         }
-                            //         else if(link.part.data.from === member.key) {
-                            //             link.visible = false;
-                            //         }
-                            //     })
-                            // })
+                            node2.visible = false;
+                            if(!node2.part.memberParts) return;
+                            node2.part.memberParts.each(function(member) {
+                                member.visible = false;    
+                                myDiagram.links.each(function(link) {
+                                    if(link.part.data.to === member.key) {
+                                        link.visible = false;
+                                    }
+                                    else if(link.part.data.from === member.key) {
+                                        link.visible = false;
+                                    }
+                                })
+                            })
                         }
                         else {
                             node2.visible = true;
@@ -1714,6 +1176,7 @@ const EditProject = (props) => {
                     
             }
         })
+        
     }
     const initDiagram = () => {
     
@@ -1741,10 +1204,12 @@ const EditProject = (props) => {
                 },  // defined below, to enable/disable commands
                 mouseDragOver: function(e) { 
                     console.log("mouseDragOver");
+                    isDragging = true;
                 },
                 mouseDrop: function(e) { 
                     console.log("mouseDrop");
                     finishDrop(e, null);
+                    isDragging = false;
                 },
                 
                 
@@ -2007,6 +1472,10 @@ const EditProject = (props) => {
             setChannelConfigured(obj.part.data);
             handleOpenChannelModal();
         }
+        function configureMode(e, obj) {
+            setFactoryConfigured(obj.part.data);
+            handleOpenModeModal();
+        }
         function setEventName(e, obj) {
             var event = obj.part.data.Event ? obj.part.data.Event : "";
             while(true){
@@ -2093,6 +1562,7 @@ const EditProject = (props) => {
           }
           function finishDrop_component(e, grp) {
                 console.log("finishDrop_component");
+
                 var collection = new go.List();
                 grp.diagram.selection.each(function(part) {
                 if(part.category === "buildUnit") {
@@ -2754,7 +2224,7 @@ const EditProject = (props) => {
                       $("ContextMenuButton",
                         $(go.TextBlock, {margin: 5, width: 150}, "Configure Fusion Rule"),
                         { 
-                          click: configureFusionRule_contextMenu,
+                        //   click: configureFusionRule_contextMenu,
                         },
                       ),
                     ),
@@ -2941,7 +2411,7 @@ const EditProject = (props) => {
                     if(node.name === "FACTORY") {
                         grp.zOrder = node.zOrder-1;
                     }
-                    if(node.category === "modeChangeInputPort") {
+                    if(node.category === "modeChangeInputPort" && isDragging) {
                         grp.findObject("MODE_A").visible = true;
                         var data = {"initial_mode": "Mode A", "mode_list":[{"name": "Mode A", "events": [{"name": "event_1", "next_mode": "Mode A", "output_internal_data_items": false}]}]}
                         myDiagram.model.setDataProperty(myDiagram.model.findNodeDataForKey(grp.key), "mode_configuration", data)
@@ -3109,7 +2579,7 @@ const EditProject = (props) => {
                     $("ContextMenuButton",
                       $(go.TextBlock, {margin: 5, width: 150}, "Configure Mode"),
                       {
-                          click: configureMode_contextMenu
+                          click: configureMode
                       },
                       new go.Binding("visible", "", 
                             function(o) {
@@ -3134,8 +2604,8 @@ const EditProject = (props) => {
                 { 
                   name: "SHAPE" ,
                   fill: "white", stroke: "black", parameter1: 10, strokeWidth: 3, 
-                  width: 350, height: 250,
-                  minSize: new go.Size( 350, 200 ),
+                  width: 450, height: 250,
+                  minSize: new go.Size( 450, 200 ),
                 }, 
                 new go.Binding("width", "WIDTH").makeTwoWay(),
                 new go.Binding("height", "HEIGHT").makeTwoWay(),     
@@ -3245,7 +2715,7 @@ const EditProject = (props) => {
                 $(go.Shape, "NoBottomRectangle",
                     { 
                         stroke: "black", strokeWidth: 3, 
-                        width: 70, height: 20 
+                        width: 90, height: 20 
                     },
                     new go.Binding("width", "WIDTH", function(data, node) {
                         return data * 0.2;
@@ -3255,7 +2725,8 @@ const EditProject = (props) => {
                     { 
                         name: "TEXT",
                         alignment: go.Spot.Center, 
-                        width: 67, height: 17, background: 'white', 
+                        width: 87, height: 17, 
+                        background: 'white', 
                         textAlign: 'center',
                         stroke: "blue",
                         font: 'bold 10pt sans-serif'
@@ -3307,7 +2778,7 @@ const EditProject = (props) => {
                 $(go.Shape, "NoBottomRectangle",
                     { 
                         stroke: "black", strokeWidth: 3, 
-                        width: 70, height: 20 
+                        width: 90, height: 20 
                     },
                     new go.Binding("width", "WIDTH", function(data, node) {
                         return data * 0.2;
@@ -3317,7 +2788,7 @@ const EditProject = (props) => {
                     { 
                         name: "TEXT",
                         alignment: go.Spot.Center, 
-                        width: 67, height: 17, background: 'white', 
+                        width: 87, height: 17, background: 'white', 
                         textAlign: 'center'
                     },
                     new go.Binding("width", "WIDTH", function(data, node) {
@@ -3367,7 +2838,7 @@ const EditProject = (props) => {
                 $(go.Shape, "NoBottomRectangle",
                     { 
                         stroke: "black", strokeWidth: 3, 
-                        width: 70, height: 20 
+                        width: 90, height: 20 
                     },
                     new go.Binding("width", "WIDTH", function(data, node) {
                         return data * 0.2;
@@ -3377,7 +2848,7 @@ const EditProject = (props) => {
                     { 
                         name: "TEXT",
                         alignment: go.Spot.Center, 
-                        width: 67, height: 17, background: 'white', 
+                        width: 87, height: 17, background: 'white', 
                         textAlign: 'center'
                     },
                     new go.Binding("width", "WIDTH", function(data, node) {
@@ -3427,7 +2898,7 @@ const EditProject = (props) => {
                 $(go.Shape, "NoBottomRectangle",
                     { 
                         stroke: "black", strokeWidth: 3, 
-                        width: 70, height: 20 
+                        width: 90, height: 20 
                     },
                     new go.Binding("width", "WIDTH", function(data, node) {
                         return data * 0.2;
@@ -3437,7 +2908,7 @@ const EditProject = (props) => {
                     { 
                         name: "TEXT",
                         alignment: go.Spot.Center, 
-                        width: 67, height: 17, background: 'white', 
+                        width: 87, height: 17, background: 'white', 
                         textAlign: 'center'
                     },
                     new go.Binding("width", "WIDTH", function(data, node) {
@@ -3520,6 +2991,7 @@ const EditProject = (props) => {
           };
         
           function calcPortLocation(data, node) {
+            console.log('calcPortLocation')
             if(node.isSelected) return go.Point.parse(data);
     
             var node_loc = go.Point.parse(data); // go.Point form
@@ -3568,7 +3040,7 @@ const EditProject = (props) => {
               if(grp) {
                   if(grp.findObject("MODE_A").visible) {
                       node_x = grp_x - grp_width/2 + 10;
-                      node_y = grp_y - grp_height/2;
+                    //   node_y = grp_y - grp_height/2;
                   }
                   else {
                       node_x = grp_x - grp_width/2 + 10;
@@ -4149,7 +3621,7 @@ const EditProject = (props) => {
         // the Overview
         myOverview =
           $(go.Overview, "overviewDiv",
-            { observed: myDiagram, maxScale: 0.3 });
+            { observed: myDiagram, maxScale: 0.1 });
             // change color of viewport border in Overview
         myOverview.box.elt(0).stroke = "dodgerblue";
     
@@ -4204,6 +3676,12 @@ const EditProject = (props) => {
                     />
                     <Modal open={channelModalOpen} onClose={handleCloseChannelModal}>
                         <ChannelConfigurationModal channel={channelConfigured} onConfirm={handleConfirmChannelModal}/>
+                    </Modal>
+                    <Modal open={modeModalOpen} onClose={handleCloseModeModal}>
+                        <ModeConfigurationModal factory={factoryConfigured} onConfirm={handleConfirmModeModal}/>
+                    </Modal>
+                    <Modal open={fusionModalOpen} onClose={handleCloseFusionModal}>
+
                     </Modal>
                 </div>
                 <div className={classes.bottomDiv}>
