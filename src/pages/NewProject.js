@@ -143,7 +143,6 @@ const NewProject = () => {
                         fullWidth
                         id="name"
                         label="Project Description"
-                        autoFocus
                         multiline={true}
                         InputLabelProps={{
                             shrink: true,

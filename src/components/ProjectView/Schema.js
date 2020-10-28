@@ -984,6 +984,9 @@ function initDiagram() {
     if(child.part.memberParts != undefined) {
         child.part.memberParts.each(function(member) {
             if(visible && child.part.data.category === "factory") {
+                if(!factory_mode_select_map.get(child.key)){
+                    factory_mode_select_map.set(child.key, 0)
+                }
                 if(member.part.data.mode === child.part.data.mode_configuration.mode_list[factory_mode_select_map.get(child.key)].name) {
                     makeVisibleRecursive(member, true);        
                 }
@@ -1009,7 +1012,9 @@ function selectMode(mode_index, mode, obj) {
     obj.panel.findObject(mode).findObject("TEXT").stroke = "blue"
     obj.panel.findObject(mode).findObject("TEXT").font = "bold 10pt sans-serif"
     obj.part.memberParts.each(function(node) {
+        if(node.part.data.key == -1) return;
         if(node.part.data.category === "modeChangeInputPort") return;
+        if(!node.part.data.group) return;
         makeVisibleRecursive(node, node.part.data.mode === myDiagram.model.findNodeDataForKey(node.part.data.group).mode_configuration.mode_list[mode_index].name);
     })
     myDiagram.links.each(function(link) {
@@ -1069,6 +1074,7 @@ function handleModelChange(changes) {
                     }
                     else {
                         node2.visible = true;
+                        if(!node2.part.memberParts) return;
                         node2.part.memberParts.each(function(member) {
                             member.visible = true;    
                             myDiagram.links.each(function(link) {

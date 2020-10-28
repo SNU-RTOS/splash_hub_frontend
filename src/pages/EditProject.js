@@ -8,7 +8,7 @@ import '../libs/gojs/GoJS/DataInspector.css'
 import React, {useEffect, useState} from 'react';
 
 import '../components/EditProject/style.css'
-import {AppBar, Button, IconButton, makeStyles, Modal, Toolbar} from '@material-ui/core';
+import {AppBar, Backdrop, Button, CircularProgress, IconButton, makeStyles, Modal, Toolbar} from '@material-ui/core';
 import SaveIcon from '@material-ui/icons/Save';
 import {useHistory} from "react-router-dom";
 
@@ -135,6 +135,9 @@ function makeVisibleRecursive(child, visible) {
     if(child.part.memberParts != undefined) {
         child.part.memberParts.each(function(member) {
             if(visible && child.part.data.category === "factory") {
+                if(!factory_mode_select_map.get(child.key)){
+                    factory_mode_select_map.set(child.key, 0)
+                }
                 if(member.part.data.mode === child.part.data.mode_configuration.mode_list[factory_mode_select_map.get(child.key)].name) {
                     makeVisibleRecursive(member, true);        
                 }
@@ -406,7 +409,25 @@ function setKeyUUID(model, data) {
             name_count = name_count + 1;
         }while(model.findNodeDataForKey(new_name) !== null);
     }
+    let uuid = '';
+    do {
+        uuid = 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+            var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+            return v.toString(16);
+          });    
+    }while(checkIfUUIDExists(uuid));
+    myDiagram.model.setDataProperty(data, "UUID", uuid);
     return new_name;
+}
+function checkIfUUIDExists(uuid) {
+    var exist_flag = false;
+    myDiagram.nodes.each(function(node) {
+        if(uuid == node.part.data.uuid) {
+            exist_flag = true;
+            return;
+        }
+    })
+    return exist_flag;
 }
 function checkIfNameExists(name) {
     var exist_flag = false;
@@ -931,6 +952,10 @@ const useStyles = makeStyles((theme) => ({
         height: 'calc(100vh - 10px)',
         overflow: 'hidden',
     },
+    backdrop: {
+        zIndex: theme.zIndex.drawer + 1,
+        color: '#fff',
+    },
     topDiv: {
         width: '100%',
         height: '645px',
@@ -957,11 +982,13 @@ const useStyles = makeStyles((theme) => ({
         border: 'solid 1px #9e9e9e',
     },
     propertyDiv: {
+        height: '90%',
         display: 'flex',
         flexDirection: 'column',
         textAlign: 'center',
         font: 'bold 12px sans-serif',
-        overflow: 'hidden',
+        overflowY: 'scroll',
+        overflowX: 'hidden',
     },
     overviewWrapper: {
         border: 'solid 1px #9e9e9e',
@@ -1025,6 +1052,7 @@ const EditProject = (props) => {
     const [channelConfigured, setChannelConfigured] = useState(null);
     const [factoryConfigured, setFactoryConfigured] = useState(null);
     const [fusionConfigured, setFusionConfigured] = useState(null);
+    const [loading, setLoading] = useState(false);
     const handleOpenChannelModal = () => {
         setChannelModalOpen(true);
     };
@@ -1086,16 +1114,38 @@ const EditProject = (props) => {
         }
     }, [])
     const request_save = async () => {
-        var result = window.confirm("Are you sure to want to save?");
-        if(result) {
-            const project_id = props.location.state.project_id;
-            const modelAsText = myDiagram.model.toJson();
-            const response = await request('put', '/project/schema/'+project_id+'/', {
-                data: modelAsText
-            })
-            if(response.status === 201) {
-                history.push('/project/'+ project_id)
+        let error_flag = false;
+        myDiagram.nodes.map((node) => {
+            console.log(node.part.data)
+            if(node.part.data.category === "streamPort") {
+                if(node.part.data.port_type === "STREAM_OUTPUT_PORT") {
+                    if(!node.part.data.Channel || !node.part.data.MessageType) {
+                        error_flag = true;
+                    }    
+                }
             }
+        })
+        if(error_flag) {
+            alert("There's a channel without a name or a message type")
+            return;
+        }
+        var result = window.confirm("Are you sure to want to save?");
+        try {
+            if(result) {
+                setLoading(true);
+                const project_id = props.location.state.project_id;
+                const modelAsText = myDiagram.model.toJson();
+                const response = await request('put', '/project/schema/'+project_id+'/', {
+                    data: modelAsText
+                })
+                if(response.status === 201) {
+                    history.push('/project/'+ project_id)
+                }
+            }
+        } catch(err) {
+            alert('Unknown error')
+        } finally {
+            setLoading(false)
         }
     }
     const request_cancel = () => {
@@ -1130,6 +1180,7 @@ const EditProject = (props) => {
                 return false;
             }
             if(node.part.data.category === "factory") {
+                console.log(node.part.data.key, node.part.data.mode_configuration)
                 if(!factory_mode_select_map.get(node.part.data.key))
                     factory_mode_select_map.set(node.part.data.key, 0);
                 var MODE_AREA_NAME_ARRAY = ["MODE_A", "MODE_B", "MODE_C", "MODE_D"];
@@ -1142,6 +1193,7 @@ const EditProject = (props) => {
                     }
                     node.memberParts.each(function(node2) {
                         if(node2.part.data.category === "modeChangeInputPort") {
+                            node2.movable = false;
                             return;   
                         }
                         if(node2.part.data.category === "factory") {
@@ -1697,7 +1749,7 @@ const EditProject = (props) => {
           $(go.Node, "Spot", splash_portStyle(),
             { 
               name: "MODECHANGE_INPUT_PORT",
-              zOrder : 10
+              zOrder : 10,
               },
             $(go.Shape, "Rectangle", 
               { fill: "white", width: 20, height:20 }),
@@ -3047,7 +3099,7 @@ const EditProject = (props) => {
               if(grp) {
                   if(grp.findObject("MODE_A").visible) {
                       node_x = grp_x - grp_width/2 + 10;
-                    //   node_y = grp_y - grp_height/2;
+                      node_y = grp_y - grp_height/2 + 5;
                   }
                   else {
                       node_x = grp_x - grp_width/2 + 10;
@@ -3096,6 +3148,7 @@ const EditProject = (props) => {
             "Event": {show: isEventOutputPort, type: "string", readOnly: true},
             "Freshness": {show: hasFreshness, type: "number"},
             "Rate": {show: hasRate, type: "number", readOnly: true},
+            "UUID": {show: false} 
         }
         });
     
@@ -3396,7 +3449,6 @@ const EditProject = (props) => {
                 shadowOffset: new go.Point(0, 0),
                 shadowBlur: 15,
                 shadowColor: "blue",
-                resizable: true,
                 resizeObjectName: "SHAPE",
                 toolTip: sharedToolTip,
               },
@@ -3639,6 +3691,9 @@ const EditProject = (props) => {
             <div className={classes.root}>
                 <div id="programName" style={{display:'none'}}>RTOS Splash Schematic Editor</div>
                 <div id="currentFile" style={{display:'none'}}>(NEW_FILENAME)</div>
+                <Backdrop className={classes.backdrop} open={loading}>
+                    <CircularProgress color="inherit" />
+                </Backdrop>
                 <AppBar position="static" className={classes.appBar}>
                     <Toolbar>
                     <div className={classes.logoWrapper}>
