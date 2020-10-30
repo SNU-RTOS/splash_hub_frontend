@@ -71,17 +71,22 @@ const SignIn = () => {
         storage.set('token', res.data.key)
         history.push('/')
     } catch(err) {
-        if(err.response.status === 400) {
-            console.log(err.response.data)
-            if('email' in err.response.data) {
-                alert('Enter valid email')
+        if(err.response) {
+            if(err.response.status === 400) {
+                console.log(err.response.data)
+                if('email' in err.response.data) {
+                    alert('Enter valid email')
+                }
+                else if('password' in err.response.data) {
+                    alert('Enter valid password')
+                }
+                else if('non_field_errors' in err.response.data) {
+                    alert('Invalid email or password')
+                }
             }
-            else if('password' in err.response.data) {
-                alert('Enter valid password')
-            }
-            else if('non_field_errors' in err.response.data) {
-                alert('Invalid email or password')
-            }
+        }
+        else {
+            alert('Unknown error')
         }
     }
   }

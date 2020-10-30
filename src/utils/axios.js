@@ -6,7 +6,8 @@ export const request = (method, url, data) => {
     method,
     url: API_HOST + url,
     data,
-  })
+  },
+  )
 };
 
 export const set_token = (token) => {

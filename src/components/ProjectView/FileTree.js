@@ -3,6 +3,8 @@ import Container from '@material-ui/core/Container';
 import { Listing, Entry, Icon, Name, LastSaved } from "@nteract/directory-listing";
 import {useHistory} from 'react-router-dom'
 import {makeStyles} from '@material-ui/core';
+import {request} from '../../utils/axios';
+import FileView from './FileView';
 
 const useStyles = makeStyles((theme) => ({
     pathDiv: {
@@ -23,6 +25,8 @@ const FileTree = (props) => {
     const {id, codeTree} = props
     const [curPath, setCurPath] = useState([])
     const [curDir, setCurDir] = useState(null)
+    const [curFileName, setCurFileName] = useState(null);
+    const [curFileData, setCurFileData] = useState(null);
     const classes = useStyles();
     const history = useHistory()
     useEffect(() => {
@@ -68,7 +72,25 @@ const FileTree = (props) => {
         setCurPath(cur_path);
         // history.goBack()
     }
-
+    const handle_open_file = async (name) => {
+        let cur_path = '';
+        curPath.map(path => {
+            cur_path = cur_path + '/' + path
+        })
+        cur_path = cur_path + '/' + name
+        try {
+            const response = await request('get', '/project/code/'+id+'/('+cur_path+')/');
+            if(response.status === 200) {
+                setCurFileData(response.data)
+                setCurFileName(name)
+            }
+            else {
+                alert('Unknown error')
+            }
+        } catch(err) {
+            alert('Unknown error')
+        }
+    }
     if(codeTree) {
         return (
             <Container>
@@ -76,6 +98,8 @@ const FileTree = (props) => {
                     <div>
                     <a className={classes.pathItem} 
                     onClick={() => {
+                        setCurFileData(null)
+                        setCurFileName(null)
                         setCurPath([])
                     }}>
                         {codeTree.name}
@@ -90,7 +114,10 @@ const FileTree = (props) => {
                             <a key={index} className={classes.pathItem}
                             onClick={() => {
                                 const path_new = curPath.slice(0, index+1);
+                                setCurFileData(null)
+                                setCurFileName(null);
                                 setCurPath(path_new)
+                                
                             }}>
                             {item}
                             </a> 
@@ -98,7 +125,12 @@ const FileTree = (props) => {
                             </div>
                         )
                     })}
+                    {curFileName ? <div className={classes.pathItem}>{curFileName}</div>: null}
                 </div>
+                {curFileName
+                ?
+                <FileView fileName={curFileName} fileData={curFileData}/> 
+                :
                 <Listing>
                     {curPath.length === 0 ? null : 
                     <Entry fileType={"directory"}>
@@ -113,24 +145,14 @@ const FileTree = (props) => {
                             <Entry fileType={item.children ? "directory" : "file"}>
                                 <Icon fileType={item.children ? "directory" : "file"} />
                                 <Name>
-                                    <a style={{cursor: 'pointer'}} onClick={item.children ? () => handle_move_dir(item.name) : null}>{item.name}</a>            
+                                    <a style={{cursor: 'pointer'}} onClick={item.children ? () => handle_move_dir(item.name) : () => handle_open_file(item.name)}>{item.name}</a>            
                                 </Name>
                                 <LastSaved lastModified={item.last_modified} />
                             </Entry>
                         )
                     }): null}
-                    {/* {codeTree.children.map((item)=>{
-                        return (
-                            <Entry fileType={item.children ? "directory" : "file"}>
-                                <Icon fileType={item.children ? "directory" : "file"} />
-                                <Name>
-                                    <a>{item.name}</a>            
-                                </Name>
-                                <LastSaved lastModified={item.last_modified} />
-                            </Entry>
-                        )
-                    })} */}
-                </Listing>
+                </Listing>}
+                
             </Container>
         );
     }
