@@ -1,5 +1,7 @@
 import {makeStyles} from '@material-ui/core';
 import React, {useEffect, useState} from 'react';
+import SyntaxHighlighter from 'react-syntax-highlighter';
+import { docco } from 'react-syntax-highlighter/dist/esm/styles/hljs';
 
 const useStyles = makeStyles((theme) => ({
     root: {
@@ -16,8 +18,8 @@ const useStyles = makeStyles((theme) => ({
         alignItems: 'center',
     },
     container: {
-        padding: '20px',
-    }
+        padding: 0
+    },
 }))
 const FileView = (props) => {
     const classes = useStyles()
@@ -31,7 +33,6 @@ const FileView = (props) => {
             const pattern = /\s\s\s\s/g
             lines_str.map(l => {
                 let indent = (l.match(pattern) || []).length;
-                
                 new_lines.push({
                     data: l,
                     indent: indent
@@ -42,25 +43,33 @@ const FileView = (props) => {
     }, [fileData])
     useEffect(() => {
         if(fileName) {
-            let file_type = fileName.split('.')[1];
-            setFileType(file_type)
+            let name_split = fileName.split('.');
+            let file_type = name_split[name_split.length - 1];
+            if(file_type === 'py' || file_type === 'pyc') {
+                setFileType('python')
+            }
+            else {
+                let found_in_supported_type = SyntaxHighlighter.supportedLanguages.find(item => {
+                    return item === file_type
+                })
+                if(found_in_supported_type) {
+                    setFileType(found_in_supported_type)
+                } else {
+                    setFileType('text')
+                }
+            }
         }
     }, [fileName])
     return (
         <div className={classes.root}>
             <div className={classes.statusBar}>
-                {lines.length} lines
+                {lines.length} lines, type: {fileType}
             </div>
             <div className={classes.container}>
-            {lines.map(line => {
-                return (
-                    <div style={{textIndent: line.indent * 20}}>
-                        {line.data}
-                    </div>
-                )
-            })}
+                <SyntaxHighlighter language={fileType} style={docco} showLineNumbers customStyle={{padding:0, margin: 0}}>
+                    {fileData}
+                </SyntaxHighlighter>
             </div>
-            
         </div>
     );
 };
