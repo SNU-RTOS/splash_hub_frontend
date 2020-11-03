@@ -15,6 +15,7 @@ import {useHistory} from "react-router-dom";
 import {request} from '../utils/axios';
 import ChannelConfigurationModal from '../components/EditProject/ChannelConfigurationModal';
 import ModeConfigurationModal from '../components/EditProject/ModeConfigurationModal';
+import FusionConfigurationModal from '../components/EditProject/FusionConfigurationModal';
 function CustomLayout() {
     go.Layout.call(this);
 }
@@ -1052,7 +1053,10 @@ const EditProject = (props) => {
     const [channelConfigured, setChannelConfigured] = useState(null);
     const [factoryConfigured, setFactoryConfigured] = useState(null);
     const [fusionConfigured, setFusionConfigured] = useState(null);
+    const [selectedInputPort, setSelectedInputPort] = useState(null);
+    const [inputPortsForFusionOperator, setInputPortsForFusionOperator] = useState([]);
     const [loading, setLoading] = useState(false);
+    
     const handleOpenChannelModal = () => {
         setChannelModalOpen(true);
     };
@@ -1083,7 +1087,31 @@ const EditProject = (props) => {
         setFusionModalOpen(false);
         setFusionConfigured(null);
     };
-    const handleConfirmFusionModal = () => {
+    const handleConfirmFusionModal = (mandatoryPortList, optionalPortList, threshold, correlation) => {
+        let _threshold = 0
+        let _optional_ports = [];
+        let _mandatory_ports = [];
+        if(threshold) {
+            _threshold = threshold
+        }
+        optionalPortList.map(item => {
+            _optional_ports.push(item.key)
+        })
+        mandatoryPortList.map(item => {
+            _mandatory_ports.push(item.key)
+        })
+        let new_data = {
+            mandatory_ports: _mandatory_ports,
+            optional_ports: _optional_ports,
+            threshold: _threshold,
+            correlation: correlation,
+        }
+        myDiagram.model.setDataProperty(myDiagram.model.findNodeDataForKey(fusionConfigured.key), "fusionRule", new_data)
+        setFusionModalOpen(false);
+        setFusionConfigured(null);
+    }
+    const handleSelectInputPort = (port) => {
+        setSelectedInputPort(port)
     }
     const handleOpenModeModal = () => {
         setModeModalOpen(true);
@@ -1113,10 +1141,22 @@ const EditProject = (props) => {
             setIsReady(true)
         }
     }, [])
+    useEffect(() => {
+        if(fusionConfigured) {
+            let temp = []
+            myDiagram.nodes.map((node) => {
+                if(node.part.data.group === fusionConfigured.key) {
+                    if(node.part.data.category === 'streamPort' && node.part.data.port_type === 'STREAM_INPUT_PORT')
+                    temp.push(node)
+                }
+            })
+            setInputPortsForFusionOperator(temp)
+        }
+    }, [fusionConfigured])
     const request_save = async () => {
         let error_flag = false;
+        let error_flag2 = false;
         myDiagram.nodes.map((node) => {
-            console.log(node.part.data)
             if(node.part.data.category === "streamPort") {
                 if(node.part.data.port_type === "STREAM_OUTPUT_PORT") {
                     if(!node.part.data.Channel || !node.part.data.MessageType) {
@@ -1124,11 +1164,21 @@ const EditProject = (props) => {
                     }    
                 }
             }
+            else if(node.part.data.category === "fusionOperator") {
+                if(node.part.data.fusionRule === null || node.part.data.fusionRule === undefined) {
+                    error_flag2 = true;
+                }
+            }
         })
         if(error_flag) {
-            alert("There's a channel without a name or a message type")
+            alert("There's a channel without a name or a message type");
             return;
         }
+        else if(error_flag2) {
+            alert("There's a fusion operator without a fusion rule");
+            return;
+        }
+    
         var result = window.confirm("Are you sure to want to save?");
         try {
             if(result) {
@@ -1143,6 +1193,7 @@ const EditProject = (props) => {
                 }
             }
         } catch(err) {
+            console.log(err)
             alert('Unknown error')
         } finally {
             setLoading(false)
@@ -1377,6 +1428,11 @@ const EditProject = (props) => {
                     var selected = e.subject.part;
                     externalDroppedObjectName = "NONE";
                     internalSelectedObjectName = selected.name;
+                    if(selected.data.category === 'streamPort' && selected.data.port_type === 'STREAM_INPUT_PORT') 
+                        setSelectedInputPort(selected)
+                    else {
+                        setSelectedInputPort(null);
+                    }
                     //setDefaultProperty(selected);
                     updateCurrentObject(selected);
                     //relocatePort(selected);
@@ -1531,6 +1587,10 @@ const EditProject = (props) => {
         function configureMode(e, obj) {
             setFactoryConfigured(obj.part.data);
             handleOpenModeModal();
+        }
+        function configureFusionRule(e, obj) {
+            setFusionConfigured(obj.part.data);
+            handleOpenFusionModal();
         }
         function setEventName(e, obj) {
             var event = obj.part.data.Event ? obj.part.data.Event : "";
@@ -2280,7 +2340,7 @@ const EditProject = (props) => {
                       $("ContextMenuButton",
                         $(go.TextBlock, {margin: 5, width: 150}, "Configure Fusion Rule"),
                         { 
-                        //   click: configureFusionRule_contextMenu,
+                           click: configureFusionRule,
                         },
                       ),
                     ),
@@ -3746,7 +3806,7 @@ const EditProject = (props) => {
                         <ModeConfigurationModal factory={factoryConfigured} onConfirm={handleConfirmModeModal}/>
                     </Modal>
                     <Modal open={fusionModalOpen} onClose={handleCloseFusionModal}>
-
+                        <FusionConfigurationModal fusionOperator={fusionConfigured} onConfirm={handleConfirmFusionModal} selectInputPort={handleSelectInputPort} inputPorts={inputPortsForFusionOperator}/>
                     </Modal>
                 </div>
                 <div className={classes.bottomDiv}>
