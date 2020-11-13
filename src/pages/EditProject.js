@@ -327,7 +327,81 @@ function addDefaultPort(part) {
         myDiagram.model.addNodeData(defaultPort);  
     }
 }
+function toggleAllModeChangePort(e,obj) {
+    var cur_shp = obj.findObject("MODECHANGE_PORT");
+    var nextState;
 
+    if(obj.name === "MODECHANGE_INPUT_PORT") {
+    nextState = !cur_shp.toLinkable;
+    } else if(obj.name === "MODECHANGE_OUTPUT_PORT") {
+    nextState = !cur_shp.fromLinkable;
+    } else if(obj.name === "MODECHANGE_DELEGATION_INPUT_PORT") {
+    nextState = !cur_shp.toLinkable;
+    } else if(obj.name === "MODECHANGE_DELEGATION_OUTPUT_PORT") {
+    nextState = !cur_shp.fromLinkable;
+    }
+    toggleAllModeChangePort_sync(myDiagram, nextState);
+}
+
+function toggleAllModeChangePort_sync(current_diagram, nextState) {
+    current_diagram.nodes.each(function(node) {
+    if (node.name === "MODECHANGE_INPUT_PORT" 
+        || node.name === "MODECHANGE_DELEGATION_INPUT_PORT"
+        || node.name === "MODECHANGE_OUTPUT_PORT"
+        || node.name === "MODECHANGE_DELEGATION_OUTPUT_PORT") {
+        var shp = node.findObject("MODECHANGE_PORT");             
+        if(node.name === "MODECHANGE_INPUT_PORT") {
+            shp.toSpot = go.Spot.Top;
+            shp.fromSpot = go.Spot.Top;
+            if(nextState === true) {                
+                shp.toLinkable = true;
+                shp.stroke = "#FF00FF";
+                shp.strokeWidth = 2;
+            } else {
+                shp.toLinkable = false;
+                shp.stroke = "black";
+                shp.strokeWidth = 1;
+            }
+        } else if (node.name === "MODECHANGE_DELEGATION_INPUT_PORT") {
+            shp.toSpot = go.Spot.Top;
+            shp.fromSpot = go.Spot.Bottom;
+            if(nextState === true) { 
+                shp.toLinkable = true;
+                shp.stroke = "#FF00FF";
+                shp.strokeWidth = 2;
+            } else {             
+                shp.toLinkable = false;
+                shp.stroke = "black";
+                shp.strokeWidth = 1;
+            } 
+        } else if(node.name === "MODECHANGE_OUTPUT_PORT") {
+            shp.toSpot = go.Spot.Top;
+            shp.fromSpot = go.Spot.Top;
+            if(nextState === true) {                
+                shp.fromLinkable = true;
+                shp.stroke = "#FF00FF";
+                shp.strokeWidth = 2;
+            } else {             
+                shp.fromLinkable = false;
+                shp.stroke = "black";
+                shp.strokeWidth = 1;
+            }
+        } else if (node.name === "MODECHANGE_DELEGATION_OUTPUT_PORT"){
+            shp.toSpot = go.Spot.Bottom;
+            shp.fromSpot = go.Spot.Top;
+            if(nextState === true) { 
+                shp.fromLinkable = true;
+                shp.stroke = "#FF00FF";
+                shp.strokeWidth = 2;
+            } else {             
+                shp.fromLinkable = false;
+                shp.stroke = "black";
+                shp.strokeWidth = 1;
+            } 
+        } else {}
+    }
+    });
+}
 
   function setDefaultProperty(part) {
     console.log("setDefaultProperty()");
@@ -1963,6 +2037,12 @@ const EditProject = (props) => {
             $(go.Shape, "Rectangle", splash_modeChangePortStyle(),
               { portId: "", alignment: new go.Spot(0.5, 0.5) }),
             new go.Binding("name", "port_type").makeTwoWay(),
+            { doubleClick: function(e, obj) {
+                e.diagram.startTransaction("Toggle Input");
+                toggleAllModeChangePort(e.diagram, obj);
+                e.diagram.commitTransaction("Toggle Input");
+              }
+            }
           ); 
         
         
@@ -1984,6 +2064,12 @@ const EditProject = (props) => {
             { portId: "", alignment: new go.Spot(0.5, 0.5) }
             ),
             new go.Binding("name", "port_type").makeTwoWay(),
+            { doubleClick: function(e, obj) {
+                e.diagram.startTransaction("Toggle Output");
+                toggleAllModeChangePort(e.diagram, obj);
+                e.diagram.commitTransaction("Toggle Output");
+              }
+            }
           );      
           function highlightProcessingComponent(e, grp, show) { 
             if (!grp) return;
