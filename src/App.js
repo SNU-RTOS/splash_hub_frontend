@@ -23,7 +23,7 @@ const App = () => {
             <Route path="/project/:id" component={Auth(ProjectView, true)} /> 
             <Route path="/search" component={Auth(Explore, null)} />
             <Route path="/new_project" component={Auth(NewProject, true)} exact/>
-            <Route path="/edit_schema" component={Auth(EditProject, true)} exact/>
+            <Route path="/edit_schematic" component={Auth(EditProject, true)} exact/>
         </Switch>
     </div>
   );

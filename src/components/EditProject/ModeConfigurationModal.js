@@ -143,13 +143,18 @@ const ModeConfigurationModal = (props) => {
     const {factory} = props
     useEffect(() => {
         if(factory) {
-            const set_event = new Set();
+            const set_event = []
             factory.mode_configuration.mode_list.forEach(function(mode) {
                 mode.events.forEach((event) => {
-                    set_event.add(event);
+                    const foundIndex = set_event.findIndex(element => element.name === event.name)
+                    if(foundIndex === -1){
+                        set_event.push(event);
+                    }
+                    else {
+                        set_event[foundIndex] = event
+                    }
                 })
-                setEventList(Array.from(set_event));
-                
+                setEventList(set_event);
             })
             setModeList(factory.mode_configuration.mode_list.slice());
         } 

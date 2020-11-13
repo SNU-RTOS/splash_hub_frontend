@@ -16,6 +16,7 @@ import {request} from '../utils/axios';
 import ChannelConfigurationModal from '../components/EditProject/ChannelConfigurationModal';
 import ModeConfigurationModal from '../components/EditProject/ModeConfigurationModal';
 import FusionConfigurationModal from '../components/EditProject/FusionConfigurationModal';
+
 function CustomLayout() {
     go.Layout.call(this);
 }
@@ -33,8 +34,8 @@ CustomLayout.prototype.doLayout = function(coll) {
         var set = new go.Set(/*go.Part*/);
         var arr = sup.data._members;
         for (var i = 0; i < arr.length; i++) {
-        var d = arr[i];
-        set.add(diag.findNodeForData(d));
+            var d = arr[i];
+            set.add(diag.findNodeForData(d));
         }
         return set;
     }
@@ -62,7 +63,9 @@ CustomLayout.prototype.doLayout = function(coll) {
                 break;
             }
         }
+        
         supers.remove(ready);
+        if(ready === null) return;
         var b = this.diagram.computePartsBounds(membersOf(ready, this.diagram));
         ready.location = new go.Point(b.position.x, b.position.y - 25);
         var body = ready.findObject("BODY");
@@ -152,6 +155,7 @@ function makeVisibleRecursive(child, visible) {
         })
     }
 }
+
 var current_factoryKey;
 
 function saveFactory(e, obj) {
@@ -222,36 +226,52 @@ function selectMode(mode_index, mode, obj) {
     obj.panel.findObject("MODE_D").findObject("TEXT").font = "normal 10pt sans-serif"
     obj.panel.findObject(mode).findObject("TEXT").stroke = "blue"
     obj.panel.findObject(mode).findObject("TEXT").font = "bold 10pt sans-serif"
+    var mode_name;  
     obj.part.memberParts.each(function(node) {
+        mode_name = myDiagram.model.findNodeDataForKey(node.part.data.group).mode_configuration.mode_list[mode_index].name;
         if(node.part.data.key == -1) return;
         if(node.part.data.category === "modeChangeInputPort") return;
         if(!node.part.data.group) return;
-        makeVisibleRecursive(node, node.part.data.mode === myDiagram.model.findNodeDataForKey(node.part.data.group).mode_configuration.mode_list[mode_index].name);
+        makeVisibleRecursive(node, node.part.data.mode === mode_name);
     })
-    myDiagram.links.each(function(link) {
-        if(!myDiagram.findNodeForKey(link.part.data.to).visible || !myDiagram.findNodeForKey(link.part.data.from).visible) {
-            link.visible = false;
-        }
-        else {
-            link.visible = true;
-        }
-    })
+    
     myDiagram.nodes.each(function(node) {
         if(node.part.data.category === "buildUnit") {
             var flag = false; 
             myDiagram.nodes.each(function(node2) {
                 if(node2.part.data.buildUnit === node.part.data.key) {
-                    console.log(node2.part.data.key, node2.visible)
-                    if(!node2.visible) {
+                    if(node2.visible) {
                         flag = true;
                         return false;
                     }
                 }  
             })
-            node.visible = !flag;
+            node.visible = flag;
         }
     })
-    
+    myDiagram.links.each(function(link) {
+        var to_node = myDiagram.findNodeForKey(link.part.data.to)
+        var from_node = myDiagram.findNodeForKey(link.part.data.from)
+        var to_node_parent = myDiagram.findNodeForKey(to_node.part.data.group)
+        var from_node_parent = myDiagram.findNodeForKey(from_node.part.data.group)
+        console.log(from_node_parent.part.data.key, from_node_parent.part.data.mode)
+        console.log(to_node_parent.part.data.key, to_node_parent.part.data.mode)
+        if(!to_node.visible && from_node_parent.part.data.mode !== mode_name) {
+            link.visible = false;
+            from_node.visible = false;
+            to_node.visible = false;
+        }
+        else if(!from_node.visible && to_node_parent.part.data.mode !== mode) {
+            link.visible = false;
+            from_node.visible = false;
+            to_node.visible = false;
+        }
+        else {
+            link.visible = true;
+            to_node.visible = true;
+            from_node.visible = true;
+        }
+    })
 }
 function finishDrop(e, grp) {      
     console.log("finishDrop")
@@ -1046,7 +1066,7 @@ const EditProject = (props) => {
     const classes = useStyles();
     const [nodeDataArray, setNodeDataArray] = useState(null);
     const [linkDataArray, setLinkDataArray] = useState(null);
-    const [isReady, setIsReady] = useState(false);
+    const [isReadySplash, setIsReadySplash] = useState(false);
     const [channelModalOpen, setChannelModalOpen] = useState(false);
     const [modeModalOpen, setModeModalOpen] = useState(false);
     const [fusionModalOpen, setFusionModalOpen] = useState(false);
@@ -1130,17 +1150,20 @@ const EditProject = (props) => {
     }
 
     useEffect(() => {
+        
         if(!props.location.state) {
             history.push('/projects/')
             return
         }
-        if(!props.location.state.is_new) {
-            request_load(props.location.state.project_id)
-        }
         else {
-            setIsReady(true)
+            setIsReadySplash(true)
         }
     }, [])
+    useEffect(() => {
+        if(isReadySplash && !props.location.state.is_new) {
+            request_load(props.location.state.project_id)
+        }
+    }, [isReadySplash])
     useEffect(() => {
         if(fusionConfigured) {
             let temp = []
@@ -1209,15 +1232,130 @@ const EditProject = (props) => {
         const response = await request('get', '/project/schema/'+id+'/')
         if(response.status === 200) {
             const schemaData = response.data.schema
-            const data = JSON.parse(schemaData)
-            setNodeDataArray(data.nodeDataArray)
-            setLinkDataArray(data.linkDataArray)
+            const parsedString = JSON.parse(schemaData)
+            // setNodeDataArray(data.nodeDataArray)
+            // setLinkDataArray(data.linkDataArray)
+            myDiagram.model = go.Model.fromJson(schemaData)
+            factory_mode_select_map.clear();
+            var newDataArray = []
+            myDiagram.nodes.each(function(node) {
+                var parsedData = parsedString.nodeDataArray.find(function(nodeData) {
+                        if(nodeData.key === node.key) return nodeData;
+                    });
+                if(node.part.data.category ==="buildUnit") {
+                    var flag = false;
+                    myDiagram.nodes.each(function(node2) {
+                        if(node2.part.data.buildUnit === node.part.data.key && !node2.visible) {
+                            flag = true;
+                            return false;
+                        }  
+                    })
+                    node.visible = !flag;
+                    return false;
+                }
+                node.part.move(go.Point.parse(parsedData.loc), true);
+                if(node.part.data.category === "factory") {
+                    node.part.data.mode_configuration = parsedData.mode_configuration;
+                    factory_mode_select_map.set(node.part.data.key, 0);
+                    var MODE_AREA_NAME_ARRAY = ["MODE_A", "MODE_B", "MODE_C", "MODE_D"];
+                    for(var i = 0; i < node.part.data.mode_configuration.mode_list.length; i++) {
+                        node.findObject(MODE_AREA_NAME_ARRAY[i]).visible = true;
+                    }
+                    node.memberParts.each(function(node2) {
+                        if(node2.part.data.category === "modeChangeInputPort") {
+                            if(node.part.data.mode_configuration.mode_list.length > 1) {
+                                node2.deletable = false;
+                            }
+                            return;   
+                        }
+                        if(node2.part.data.category === "factory") {
+                            return
+                        }
+                        const node_found = parsedString.nodeDataArray.find(function(nodeData) {
+                            if(nodeData.key === node2.key) return nodeData;
+                        })
+                        if(node_found === undefined) return
+                        node2.part.data.mode = node_found.mode
+                        if(node2.part.data.mode !== node.part.data.mode_configuration.initial_mode) {
+                            node2.visible = false;
+                            node2.part.memberParts.each(function(member) {
+                                member.visible = false;    
+                                myDiagram.links.each(function(link) {
+                                    if(link.part.data.to === member.key)
+                                        link.visible = false;
+                                    else if(link.part.data.from === member.key)
+                                        link.visible = false;
+                                })
+                            })
+                        }
+                        else {
+                            node2.visible = true;
+                            node2.part.memberParts.each(function(member) {
+                                member.visible = true;    
+                                myDiagram.links.each(function(link) {
+                                    if(link.part.data.to === member.key)
+                                        link.visible = true;
+                                    else if(link.part.data.from === member.key)
+                                        link.visible = true;
+                                })
+                            })
+                        }
+                    })
+                        
+                }
+            })
+            myDiagram.model.nodeDataArray.forEach(function(node){
+                if(node.category === "processingComponent" ||
+                node.category === "fusionOperator" ||
+                node.category === "sourceComponent" ||
+                node.category === "sinkComponent" ||
+                node.category === "buildUnit") {
+                    newDataArray.push(node);
+                }
+            })
+            
+            myDiagram_buildUnit_selectionPane.model.nodeDataArray = newDataArray;
+            myDiagram_buildUnit_selectionPane.nodes.each(function(node) {
+                if(node.part.category === "processingComponent" ||
+                node.part.category === "fusionOperator" ||
+                node.part.category === "sourceComponent" ||
+                node.part.category === "sinkComponent")
+                    myDiagram_buildUnit_selectionPane.model.setParentKeyForNodeData(node.part.data, node.part.data.buildUnit);
+            })
+            // share the UndoManager too!
+            myDiagram_buildUnit_selectionPane.model.undoManager = myDiagram.model.undoManager;
+            myDiagram.requestUpdate();
+            myDiagram_buildUnit_selectionPane.requestUpdate();
+            myDiagram.model.makeUniqueKeyFunction = setKeyUUID;
+            myDiagram_buildUnit_selectionPane.model.makeUniqueKeyFunction = setKeyUUID;
+            var arr = myDiagram.model.nodeDataArray;
+            for (var i = 0; i < arr.length; i++) {
+                var data = arr[i];
+                var buildUnit = data.buildUnit;
+                if (buildUnit) {
+                    var sdata = myDiagram.model.findNodeDataForKey(buildUnit);
+                    if (sdata) {
+                        // update _supers to be an Array of references to node data
+                        if (!data._buildUnit) {
+                            data._buildUnit = [sdata];
+                        } else {
+                            data._buildUnit.push(sdata);
+                        }
+                        // update _members to be an Array of references to node data
+                        if (!sdata._members) {
+                            sdata._members = [data];
+                        } else {
+                            sdata._members.push(data);
+                        }
+                    }
+                }
+            }
         }
-        setIsReady(true)
     }
     const handleModelChange = (changes) => {
         setNodeDataArray(myDiagram.nodes)
         setLinkDataArray(myDiagram.links)
+        
         myDiagram.nodes.each(function(node) {
             if(node.part.data.category ==="buildUnit") {
                 var flag = false;
@@ -1318,8 +1456,6 @@ const EditProject = (props) => {
                     finishDrop(e, null);
                     isDragging = false;
                 },
-                
-                
                 ExternalObjectsDropped: function(e) {
                 
                     console.log("ExternalObjectsDropped()");
@@ -3743,10 +3879,10 @@ const EditProject = (props) => {
             { observed: myDiagram, maxScale: 0.1 });
             // change color of viewport border in Overview
         myOverview.box.elt(0).stroke = "dodgerblue";
-    
+        
         return myDiagram;
       }
-    if(isReady) {
+    if(isReadySplash) {
         return (
             <div className={classes.root}>
                 <div id="programName" style={{display:'none'}}>RTOS Splash Schematic Editor</div>

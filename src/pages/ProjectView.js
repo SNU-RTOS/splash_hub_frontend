@@ -107,7 +107,7 @@ const ProjectView = (props) => {
 
     }
     const go_to_edit_schema = () => {
-        history.push('/edit_schema', {project_id: params.id, is_new: false})
+        history.push('/edit_schematic', {project_id: params.id, is_new: false})
     }
     return (
         <div>
@@ -119,7 +119,7 @@ const ProjectView = (props) => {
             </div>
             <AppBar position="sticky" color='transparent'>
                 <Tabs value={value} onChange={handleChange} aria-label="tabs" >
-                    <Tab className={classes.tab} label="Schema" {...a11yProps(0)} />
+                    <Tab className={classes.tab} label="Schematic" {...a11yProps(0)} />
                     <Tab className={classes.tab} label="Code" {...a11yProps(1)} />
                 </Tabs>
             </AppBar>

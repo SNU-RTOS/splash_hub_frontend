@@ -82,7 +82,7 @@ const NewProject = () => {
                 description: desc
             })
             if(res.status === 201) {
-                history.push('/edit_schema', {project_id: res.data.project_id, is_new: true})
+                history.push('/edit_schematic', {project_id: res.data.project_id, is_new: true})
             } else if(res.status === 226) {
                 setDuplName(DUPLICATION_CHECK_RETRY)
             } 
