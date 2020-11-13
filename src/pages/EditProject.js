@@ -228,11 +228,16 @@ function selectMode(mode_index, mode, obj) {
     obj.panel.findObject(mode).findObject("TEXT").font = "bold 10pt sans-serif"
     var mode_name;  
     obj.part.memberParts.each(function(node) {
-        mode_name = myDiagram.model.findNodeDataForKey(node.part.data.group).mode_configuration.mode_list[mode_index].name;
-        if(node.part.data.key == -1) return;
-        if(node.part.data.category === "modeChangeInputPort") return;
-        if(!node.part.data.group) return;
-        makeVisibleRecursive(node, node.part.data.mode === mode_name);
+        try{
+            mode_name = myDiagram.model.findNodeDataForKey(node.part.data.group).mode_configuration.mode_list[mode_index].name;
+            if(node.part.data.key == -1) return;
+            if(node.part.data.category === "modeChangeInputPort") return;
+            if(!node.part.data.group) return;
+            makeVisibleRecursive(node, node.part.data.mode === mode_name);
+        }
+        catch(err) {
+            console.log(err)
+        }
     })
     
     myDiagram.nodes.each(function(node) {
