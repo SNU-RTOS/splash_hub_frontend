@@ -259,14 +259,12 @@ function selectMode(mode_index, mode, obj) {
         var from_node = myDiagram.findNodeForKey(link.part.data.from)
         var to_node_parent = myDiagram.findNodeForKey(to_node.part.data.group)
         var from_node_parent = myDiagram.findNodeForKey(from_node.part.data.group)
-        console.log(from_node_parent.part.data.key, from_node_parent.part.data.mode)
-        console.log(to_node_parent.part.data.key, to_node_parent.part.data.mode)
         if(!to_node.visible && from_node_parent.part.data.mode !== mode_name) {
             link.visible = false;
             from_node.visible = false;
             to_node.visible = false;
         }
-        else if(!from_node.visible && to_node_parent.part.data.mode !== mode) {
+        else if(!from_node.visible && to_node_parent.part.data.mode !== mode_name) {
             link.visible = false;
             from_node.visible = false;
             to_node.visible = false;
