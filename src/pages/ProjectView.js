@@ -12,7 +12,8 @@ import Code from '../components/ProjectView/Code';
 import Schema from '../components/ProjectView/Schema';
 import Buttons from '../components/ProjectView/Buttons';
 import {request} from '../utils/axios';
-
+import FileSaver from 'file-saver';
+import axios from 'axios';
 const useStyles = makeStyles((theme) => ({
   appBarSpacer: theme.mixins.toolbar,
   overview: {
@@ -103,8 +104,27 @@ const ProjectView = (props) => {
             window.removeEventListener('scroll', () => handleScroll);
         };
     }, [])
+    const str2bytes = (str) => {
+        var bytes = new Uint8Array(str.length);
+        for (var i=0; i<str.length; i++) {
+            bytes[i] = str.charCodeAt(i);
+        }
+        return bytes;
+    }
     const request_download_code = async () => {
-
+        try {
+            axios.get( 
+                'http://localhost:8000/project/code/download/'+params.id+'/', 
+                {
+                    responseType: 'arraybuffer'
+                } )
+                .then(response => {
+                    const blob = new Blob([response.data], {type: "application/zip"});
+                    FileSaver.saveAs(blob, data.name+'.zip'); 
+                })
+        } catch(e) {
+            console.log(e)
+        }
     }
     const go_to_edit_schema = () => {
         history.push('/edit_schematic', {project_id: params.id, is_new: false})

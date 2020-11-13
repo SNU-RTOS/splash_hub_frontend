@@ -10,6 +10,7 @@
     "@testing-library/react": "^9.3.2",
     "@testing-library/user-event": "^7.1.2",
     "axios": "^0.20.0",
+    "file-saver": "^2.0.2",
     "gojs": "^2.1.26",
     "gojs-react": "^1.0.8",
     "react": "^16.13.1",
