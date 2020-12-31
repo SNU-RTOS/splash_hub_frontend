@@ -48,7 +48,9 @@ const ProjectOverview = ({data}) => {
                     </Link>
                     </div>
                     <Typography variant="body1">
-                        {data.desc}
+                        {data.desc.split("\\n").map(line => {
+                            return (<span>{line}<br/></span>)
+                        })}
                     </Typography>
                 </div>
         );

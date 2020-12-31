@@ -229,6 +229,7 @@ function selectMode(mode_index, mode, obj) {
     var mode_name;  
     obj.part.memberParts.each(function(node) {
         try{
+            console.log(node.part.data.group)
             mode_name = myDiagram.model.findNodeDataForKey(node.part.data.group).mode_configuration.mode_list[mode_index].name;
             if(node.part.data.key == -1) return;
             if(node.part.data.category === "modeChangeInputPort") return;
@@ -261,18 +262,18 @@ function selectMode(mode_index, mode, obj) {
         var from_node_parent = myDiagram.findNodeForKey(from_node.part.data.group)
         if(!to_node.visible && from_node_parent.part.data.mode !== mode_name) {
             link.visible = false;
-            from_node.visible = false;
-            to_node.visible = false;
+            // from_node.visible = false;
+            // to_node.visible = false;
         }
         else if(!from_node.visible && to_node_parent.part.data.mode !== mode_name) {
             link.visible = false;
-            from_node.visible = false;
-            to_node.visible = false;
+            // from_node.visible = false;
+            // to_node.visible = false;
         }
         else {
             link.visible = true;
-            to_node.visible = true;
-            from_node.visible = true;
+            // to_node.visible = true;
+            // from_node.visible = true;
         }
     })
 }
@@ -795,19 +796,19 @@ function relocatePort(part) {
 
     var it_memberParts;
     var memeber_port;
-    console.log(part.name)
     if(part.name == "SOURCE") {
+      
         it_memberParts = part.memberParts;
         memeber_port = it_memberParts.first()
 
-        memeber_port.location = new go.Point(part.location.x+30, part.location.y-part.actualBounds.height/2);
+        memeber_port.location = new go.Point(part.location.x+30, part.location.y-part.findObject("SHAPE").height/2);
         
 
     } else if(part.name == "SINK") {
         it_memberParts = part.memberParts;
         memeber_port = it_memberParts.first()
 
-        memeber_port.location = new go.Point(part.location.x-50, part.location.y-part.actualBounds.height/2);
+        memeber_port.location = new go.Point(part.location.x-50, part.location.y-part.findObject("SHAPE").height/2);
 
     } else if(part.name == "FUSION") {
         it_memberParts = part.memberParts;
@@ -815,8 +816,8 @@ function relocatePort(part) {
         it_memberParts.each(function(node){
             if(node.name === "STREAM_OUTPUT_PORT") memeber_port = node;
         });
-        memeber_port.location = new go.Point(part.location.x+30, part.location.y-part.actualBounds.height/2+30);
-    }
+        // memeber_port.location = new go.Point(part.location.x+30, part.location.y-part.findObject("SHAPE").width/2+15);
+    } 
 }
 
 function setBuildUnit_contextMenu(e, obj) {
@@ -1723,14 +1724,15 @@ const EditProject = (props) => {
         myDiagram.linkTemplate = 
             $(go.Link,
                 {
-                // routing: go.Link.AvoidsNodes,
-                routing: go.Link.Orthogonal,
-                curve: go.Link.JumpOver,
+                routing: go.Link.AvoidsNodes,
+                // routing: go.Link.Orthogonal,
+                // curve: go.Link.JumpOver,
                 corner: 0,
                 relinkableFrom: false, relinkableTo: false,
-                reshapable: false,
+                reshapable: true,
                 selectionAdorned: false, // Links are not adorned when selected so that their color remains visible.
                 shadowOffset: new go.Point(0, 0), shadowBlur: 5, shadowColor: "blue",
+                zOrder: 1000,
                 },
                 new go.Binding("isShadowed", "isSelected").ofObject(),
                 
@@ -1878,7 +1880,7 @@ const EditProject = (props) => {
                 splash_componentStyle(),
                 {
                   ungroupable: true,
-                  locationSpot: go.Spot.Center,
+                  // locationSpot: go.Spot.Center,
     
                   zOrder: 1,
                   layerName: "Background",
@@ -2355,7 +2357,7 @@ const EditProject = (props) => {
               $(go.Shape, "Rectangle",
                 { 
                   name: "SHAPE",
-                  fill: "white", width: 80, height: 40, stroke: "black", strokeWidth: 1.5,
+                  fill: "white", width: 140, height: 60, stroke: "black", strokeWidth: 1.5,
                   alignmentFocus: new go.Spot(0,0,0,0),
                 },
               ), 
@@ -2482,7 +2484,7 @@ const EditProject = (props) => {
               $(go.Shape, "Rectangle",
                 { 
                   name: "SHAPE",
-                  fill: "white", width: 80, height: 40, stroke: "black", strokeWidth: 1.5
+                  fill: "white", width: 120, height: 60, stroke: "black", strokeWidth: 1.5
                 },
               ), 
         
@@ -2527,7 +2529,7 @@ const EditProject = (props) => {
                 e.handled = true;
                 if (show) {
                   // cannot depend on the grp.diagram.selection in the case of external drag-and-drops;
-                  // instead depend on the DraggingTool.draggedParts or .copiedParts
+                  // instead depend onqqq the DraggingTool.draggedParts or .copiedParts
                   var tool = grp.diagram.toolManager.draggingTool;
                   var map = tool.draggedParts || tool.copiedParts;  // this is a Map
                   // now we can check to see if the Group will accept membership of the dragged Parts
@@ -2582,7 +2584,10 @@ const EditProject = (props) => {
                 
                 memberAdded: function(grp, node) {
                   var selectedName = node.name;
-                  if(node.name === "STREAM_OUTPUT_PORT") grp.data.haveOutputPort = true;
+                  if(node.name === "STREAM_OUTPUT_PORT") {
+                    grp.data.haveOutputPort = true;
+                    node.movable = false;
+                  } 
                 },
                 memberRemoved: function(grp, node) {
                   // TODO: modify, node has an after-removed property
@@ -2646,7 +2651,7 @@ const EditProject = (props) => {
               $(go.Shape, "Trapezoid",
                 { 
                   name: "SHAPE" , 
-                  height: 40, width: 100,
+                  height: 40, width: 115,
                   fill: "white", stroke: "red", strokeWidth: 1.5, angle: 90 
                 },
                 new go.Binding("stroke", "fusionRule", function(r) {
@@ -2675,7 +2680,7 @@ const EditProject = (props) => {
                   width: 20,
                   opacity: 0.5,
                   alignment: go.Spot.Right,
-                  alignmentFocus: new go.Spot(1,0.5,0,0),              
+                  alignmentFocus: new go.Spot(1,0.5,0,0),        
                 }            
               ),
     
@@ -2754,7 +2759,7 @@ const EditProject = (props) => {
                     }
                     if(node.category === "modeChangeInputPort" && isDragging) {
                         grp.findObject("MODE_A").visible = true;
-                        var data = {"initial_mode": "Mode A", "mode_list":[{"name": "Mode A", "events": [{"name": "event_1", "next_mode": "Mode A", "output_internal_data_items": false}]}]}
+                        var data = {"initial_mode": "Mode_A", "mode_list":[{"name": "Mode_A", "events": [{"name": "event_1", "next_mode": "Mode_A", "output_internal_data_items": false}]}]}
                         myDiagram.model.setDataProperty(myDiagram.model.findNodeDataForKey(grp.key), "mode_configuration", data)
                         myDiagram.nodes.each(function(node2) {
                             if(node2.part.data.group === grp.key) {
@@ -2853,8 +2858,9 @@ const EditProject = (props) => {
                         if(flag) {
                             return false;
                         }    
-                        posX_atFactory = grp_loc.x - grp_width/2 + 10;
-                        posY_atFactory = grp_loc.y - grp_height/2;
+                        console.log(grp_loc)
+                        posX_atFactory = grp_loc.x + 10
+                        posY_atFactory = grp_loc.y + 5
                         myDiagram.nodes.each(function(part) {
                             if(part.data.group === grp.key && part.data.category === "modeChangeOutputPort") {
                                 part.position = new go.Point(part.location.x, posY_atFactory)
@@ -3037,7 +3043,7 @@ const EditProject = (props) => {
               $(go.Panel, "Spot", 
                 {
                     name: "MODE_A",
-                    alignment: new go.Spot(0.1, 0.03, 0, 0),
+                    alignment: new go.Spot(0.07, 0.03, 0, 0),
                     alignmentFocus: go.Spot.BottomLeft,
                     click: function(e, obj) { 
                         factory_mode_select_map.set(obj.part.data.key, 0);
@@ -3054,7 +3060,7 @@ const EditProject = (props) => {
                 }),
                 new go.Binding("alignment", "HEIGHT", function(data, node) {
                     var new_y = Math.max(0.0507 * Math.exp(-0.002* data), 0.0052);
-                    return new go.Spot(0.1, new_y, 0, 0);
+                    return new go.Spot(0.07, new_y, 0, 0);
                 }),
                 $(go.Shape, "NoBottomRectangle",
                     { 
@@ -3065,7 +3071,7 @@ const EditProject = (props) => {
                         return data * 0.2;
                     })
                 ),
-                $(go.TextBlock, "Mode A",
+                $(go.TextBlock, "Mode_A",
                     { 
                         name: "TEXT",
                         alignment: go.Spot.Center, 
@@ -3100,7 +3106,7 @@ const EditProject = (props) => {
               $(go.Panel, "Spot",
                 {
                     name: "MODE_B",
-                    alignment: new go.Spot(0.3, 0.03, 0, 0),
+                    alignment: new go.Spot(0.27, 0.03, 0, 0),
                     alignmentFocus: go.Spot.BottomLeft,
                     click: function(e, obj) { 
                         factory_mode_select_map.set(obj.part.data.key, 1);
@@ -3109,7 +3115,7 @@ const EditProject = (props) => {
                 },
                 new go.Binding("alignment", "HEIGHT", function(data, node) {
                     var new_y = Math.max(0.0507 * Math.exp(-0.002* data), 0.0052);
-                    return new go.Spot(0.3, new_y, 0, 0);
+                    return new go.Spot(0.27, new_y, 0, 0);
                 }),
                 new go.Binding("visible", "", function(o) {
                     if(!o.mode_configuration) {
@@ -3160,7 +3166,7 @@ const EditProject = (props) => {
               $(go.Panel, "Spot", 
                 {
                     name: "MODE_C",
-                    alignment: new go.Spot(0.5, 0.03, 0, 0),
+                    alignment: new go.Spot(0.47, 0.03, 0, 0),
                     alignmentFocus: go.Spot.BottomLeft,
                     click: function(e, obj) { 
                         factory_mode_select_map.set(obj.part.data.key, 2);
@@ -3177,7 +3183,7 @@ const EditProject = (props) => {
                 }),
                 new go.Binding("alignment", "HEIGHT", function(data, node) {
                     var new_y = Math.max(0.0507 * Math.exp(-0.002* data), 0.0052);
-                    return new go.Spot(0.5, new_y, 0, 0);
+                    return new go.Spot(0.47, new_y, 0, 0);
                 }),
                 $(go.Shape, "NoBottomRectangle",
                     { 
@@ -3220,7 +3226,7 @@ const EditProject = (props) => {
               $(go.Panel, "Spot", 
                 {
                     name: "MODE_D",
-                    alignment: new go.Spot(0.7, 0.03, 0, 0),
+                    alignment: new go.Spot(0.67, 0.03, 0, 0),
                     alignmentFocus: go.Spot.BottomLeft,
                     click: function(e, obj) { 
                         factory_mode_select_map.set(obj.part.data.key, 3);
@@ -3237,7 +3243,7 @@ const EditProject = (props) => {
                 }),
                 new go.Binding("alignment", "HEIGHT", function(data, node) {
                     var new_y = Math.max(0.0507 * Math.exp(-0.002* data), 0.0052);
-                    return new go.Spot(0.7, new_y, 0, 0);
+                    return new go.Spot(0.67, new_y, 0, 0);
                 }),
                 $(go.Shape, "NoBottomRectangle",
                     { 
@@ -3383,8 +3389,8 @@ const EditProject = (props) => {
                     || node.name === "MODECHANGE_DELEGATION_INPUT_PORT") {
               if(grp) {
                   if(grp.findObject("MODE_A").visible) {
-                      node_x = grp_x - grp_width/2 + 10;
-                      node_y = grp_y - grp_height/2 + 5;
+                      node_x = grp_x + 10;
+                      node_y = grp_y + 5;
                   }
                   else {
                       node_x = grp_x - grp_width/2 + 10;
@@ -3836,7 +3842,7 @@ const EditProject = (props) => {
               },                
               $(go.Shape, "RoundedRectangle",
                 { fill: $(go.Brush, "Linear", { 0.0: "white", 1.0: "gray" }),
-                  width: 180, height: 55, stroke: "black", strokeWidth: 1,
+                  width: 180, height: 50, stroke: "black", strokeWidth: 1,
                   parameter1: 5,
                   alignment: new go.Spot(0.5, 0.5)
                 }),       

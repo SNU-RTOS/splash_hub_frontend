@@ -14,6 +14,7 @@ import Buttons from '../components/ProjectView/Buttons';
 import {request} from '../utils/axios';
 import FileSaver from 'file-saver';
 import axios from 'axios';
+import {API_HOST} from '../config';
 const useStyles = makeStyles((theme) => ({
   appBarSpacer: theme.mixins.toolbar,
   overview: {
@@ -114,7 +115,7 @@ const ProjectView = (props) => {
     const request_download_code = async () => {
         try {
             axios.get( 
-                'http://localhost:8000/project/code/download/'+params.id+'/', 
+                API_HOST + '/project/code/download/'+params.id+'/', 
                 {
                     responseType: 'arraybuffer'
                 } )

@@ -157,6 +157,7 @@ const NewProject = () => {
                             else {
                                 e.target.value = desc
                             }
+                            console.log(e.target.value)
                         }}
                     />
                     <Grid item xs={12}>
