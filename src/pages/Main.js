@@ -18,7 +18,6 @@ const Main = (props, userInfo) => {
     return (
         <div>
             <Header sticky={isSticky ? true : false}/>
-            
         </div>
     );
 };

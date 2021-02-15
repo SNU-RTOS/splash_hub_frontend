@@ -25,28 +25,28 @@ go.Diagram.inherit(CustomLayout, go.Layout);
 CustomLayout.prototype.doLayout = function(coll) {
     coll = this.collectParts(coll);
 
-    var supers = new go.Set(/*go.Node*/);
+    let supers = new go.Set(/*go.Node*/);
     coll.each(function(p) {
         if (p instanceof go.Node && p.category === "buildUnit") supers.add(p);
     });
 
     function membersOf(sup, diag) {
-        var set = new go.Set(/*go.Part*/);
-        var arr = sup.data._members;
-        for (var i = 0; i < arr.length; i++) {
-            var d = arr[i];
+        let set = new go.Set(/*go.Part*/);
+        let arr = sup.data._members;
+        for (let i = 0; i < arr.length; i++) {
+            let d = arr[i];
             set.add(diag.findNodeForData(d));
         }
         return set;
     }
 
     function isReady(sup, supers, diag) {
-        var arr = sup.data._members;
+        let arr = sup.data._members;
         if(arr === undefined) return false;
-        for (var i = 0; i < arr.length; i++) {
-            var d = arr[i];
+        for (let i = 0; i < arr.length; i++) {
+            let d = arr[i];
             if (d.category === "buildUnit") continue;
-            var n = diag.findNodeForData(d);
+            let n = diag.findNodeForData(d);
             if (supers.has(n)) return false;
         }
         return true;
@@ -55,8 +55,8 @@ CustomLayout.prototype.doLayout = function(coll) {
     // need to perform their own transactions
     this.diagram.startTransaction("Custom Layout");
     while (supers.count > 0) {
-        var ready = null;
-        var it = supers.iterator;
+        let ready = null;
+        let it = supers.iterator;
         while (it.next()) {
             if (isReady(it.value, supers, this.diagram)) {
                 ready = it.value;
@@ -66,9 +66,9 @@ CustomLayout.prototype.doLayout = function(coll) {
         
         supers.remove(ready);
         if(ready === null) return;
-        var b = this.diagram.computePartsBounds(membersOf(ready, this.diagram));
+        let b = this.diagram.computePartsBounds(membersOf(ready, this.diagram));
         ready.location = new go.Point(b.position.x, b.position.y - 25);
-        var body = ready.findObject("BODY");
+        let body = ready.findObject("BODY");
         if (body) { 
             body.desiredSize = new go.Size(b.size.width, b.size.height + 25);
         }
@@ -82,14 +82,14 @@ go.Diagram.inherit(CustomDraggingTool, go.DraggingTool);
 
 CustomDraggingTool.prototype.moveParts = function(parts, offset, check) {
     go.DraggingTool.prototype.moveParts.call(this, parts, offset, check);
-    var diagram = this.diagram;
+    let diagram = this.diagram;
     this.diagram.layoutDiagram(true);
 };
 
 CustomDraggingTool.prototype.computeEffectiveCollection = function(parts) {
     console.log("computeEffectiveCollection")
-    var coll = new go.Set(/*go.Part*/).addAll(parts);
-    var tool = this;
+    let coll = new go.Set(/*go.Part*/).addAll(parts);
+    let tool = this;
     parts.each(function(p) {
         tool.walkSubTree(p, coll);
     })
@@ -103,11 +103,11 @@ CustomDraggingTool.prototype.walkSubTree = function(sup, coll) {
     coll.add(sup);
     if (sup.category !== "buildUnit") return;
     // recurse through this super state's members
-    var model = this.diagram.model;
-    var mems = sup.data._members;
+    let model = this.diagram.model;
+    let mems = sup.data._members;
     if (mems) {
-        for (var i = 0; i < mems.length; i++) {
-            var mdata = mems[i];
+        for (let i = 0; i < mems.length; i++) {
+            let mdata = mems[i];
             this.walkSubTree(this.diagram.findNodeForData(mdata), coll);
         }
     }
@@ -122,16 +122,16 @@ let myChangingModel = false;
 let externalDroppedObjectName = "NONE";
 let internalSelectedObjectName = "NONE";
 let isDragging = false;
-var highlighted_factory = null;
-var buildUnit_dragging = false;
-var configuring_fusionRule = false;
-var selected_fusion_operator = null;
-var origin_data;
-var nodes_selected_in_fusionrule = new go.Set();
+let highlighted_factory = null;
+let buildUnit_dragging = false;
+let configuring_fusionRule = false;
+let selected_fusion_operator = null;
+let origin_data;
+let nodes_selected_in_fusionrule = new go.Set();
 
 const factory_mode_select_map = new Map();
-var set_mode;
-var set_event;
+let set_mode;
+let set_event;
 
 
 function makeVisibleRecursive(child, visible) {
@@ -156,29 +156,29 @@ function makeVisibleRecursive(child, visible) {
     }
 }
 
-var current_factoryKey;
+let current_factoryKey;
 
 function saveFactory(e, obj) {
     // get the context menu that holds the button that was clicked
-    var contextmenu = obj.part;
+    let contextmenu = obj.part;
     // get the node data to which the Node is data bound
-    var nodedata = contextmenu.data;
+    let nodedata = contextmenu.data;
     current_factoryKey = contextmenu.key;
 
-    var copiedModel = new go.GraphLinksModel(e.diagram.model.nodeDataArray, myDiagram.model.linkDataArray);
+    let copiedModel = new go.GraphLinksModel(e.diagram.model.nodeDataArray, myDiagram.model.linkDataArray);
 
 
-    var new_nodeDataArray = copiedModel.nodeDataArray.filter(factoryRelatedNode);
-    var new_linkDataArray = copiedModel.linkDataArray.filter(factoryRelatedNode);
+    let new_nodeDataArray = copiedModel.nodeDataArray.filter(factoryRelatedNode);
+    let new_linkDataArray = copiedModel.linkDataArray.filter(factoryRelatedNode);
 
-    var factoryModel = new go.GraphLinksModel(new_nodeDataArray, new_linkDataArray);
+    let factoryModel = new go.GraphLinksModel(new_nodeDataArray, new_linkDataArray);
 
-    var blob = new Blob([factoryModel.toJson()], {type: "application/json"});
+    let blob = new Blob([factoryModel.toJson()], {type: "application/json"});
                     
 }
 
 function factoryRelatedNode(value) {
-    var condition;
+    let condition;
     if(value.key === current_factoryKey || value.group === current_factoryKey) {
         console.log(current_factoryKey +"=?"+value.key);
         console.log(current_factoryKey +"=?"+value.group);
@@ -196,8 +196,8 @@ function highlightFactory(e, grp, show) {
         highlighted_factory = grp;
         // cannot depend on the grp.diagram.selection in the case of external drag-and-drops;
         // instead depend on the DraggingTool.draggedParts or .copiedParts
-        var tool = grp.diagram.toolManager.draggingTool;
-        var map = tool.draggedParts || tool.copiedParts;  // this is a Map
+        let tool = grp.diagram.toolManager.draggingTool;
+        let map = tool.draggedParts || tool.copiedParts;  // this is a Map
         // now we can check to see if the Group will accept membership of the dragged Parts
         if (grp.canAddMembers(map.toKeySet())) {
             return;
@@ -226,7 +226,7 @@ function selectMode(mode_index, mode, obj) {
     obj.panel.findObject("MODE_D").findObject("TEXT").font = "normal 10pt sans-serif"
     obj.panel.findObject(mode).findObject("TEXT").stroke = "blue"
     obj.panel.findObject(mode).findObject("TEXT").font = "bold 10pt sans-serif"
-    var mode_name;  
+    let mode_name;  
     obj.part.memberParts.each(function(node) {
         try{
             console.log(node.part.data.group)
@@ -243,7 +243,7 @@ function selectMode(mode_index, mode, obj) {
     
     myDiagram.nodes.each(function(node) {
         if(node.part.data.category === "buildUnit") {
-            var flag = false; 
+            let flag = false; 
             myDiagram.nodes.each(function(node2) {
                 if(node2.part.data.buildUnit === node.part.data.key) {
                     if(node2.visible) {
@@ -256,10 +256,10 @@ function selectMode(mode_index, mode, obj) {
         }
     })
     myDiagram.links.each(function(link) {
-        var to_node = myDiagram.findNodeForKey(link.part.data.to)
-        var from_node = myDiagram.findNodeForKey(link.part.data.from)
-        var to_node_parent = myDiagram.findNodeForKey(to_node.part.data.group)
-        var from_node_parent = myDiagram.findNodeForKey(from_node.part.data.group)
+        let to_node = myDiagram.findNodeForKey(link.part.data.to)
+        let from_node = myDiagram.findNodeForKey(link.part.data.from)
+        let to_node_parent = myDiagram.findNodeForKey(to_node.part.data.group)
+        let from_node_parent = myDiagram.findNodeForKey(from_node.part.data.group)
         if(!to_node.visible && from_node_parent.part.data.mode !== mode_name) {
             link.visible = false;
             // from_node.visible = false;
@@ -279,7 +279,7 @@ function selectMode(mode_index, mode, obj) {
 }
 function finishDrop(e, grp) {      
     console.log("finishDrop")
-    var list = new go.List();
+    let list = new go.List();
     if(grp === null) {
         e.diagram.selection.each(function(node) {
             myDiagram.nodes.each(function(part) {
@@ -292,14 +292,14 @@ function finishDrop(e, grp) {
         return;
     }
     
-    var ok = (grp !== null
+    let ok = (grp !== null
     ? grp.addMembers(grp.diagram.selection, true)
     : e.diagram.commandHandler.addTopLevelParts(e.diagram.selection, true));
     if (!ok) e.diagram.currentTool.doCancel();        
 }
 function addDefaultPort(part) {
     console.log("addDefaultPort()");
-    var defaultPort;
+    let defaultPort;
     if(part.name === "SOURCE") {
         defaultPort = {
             category: "streamPort", 
@@ -327,8 +327,8 @@ function addDefaultPort(part) {
     }
 }
 function toggleAllModeChangePort(e,obj) {
-    var cur_shp = obj.findObject("MODECHANGE_PORT");
-    var nextState;
+    let cur_shp = obj.findObject("MODECHANGE_PORT");
+    let nextState;
 
     if(obj.name === "MODECHANGE_INPUT_PORT") {
     nextState = !cur_shp.toLinkable;
@@ -348,7 +348,7 @@ function toggleAllModeChangePort_sync(current_diagram, nextState) {
         || node.name === "MODECHANGE_DELEGATION_INPUT_PORT"
         || node.name === "MODECHANGE_OUTPUT_PORT"
         || node.name === "MODECHANGE_DELEGATION_OUTPUT_PORT") {
-        var shp = node.findObject("MODECHANGE_PORT");             
+        let shp = node.findObject("MODECHANGE_PORT");             
         if(node.name === "MODECHANGE_INPUT_PORT") {
             shp.toSpot = go.Spot.Top;
             shp.fromSpot = go.Spot.Top;
@@ -404,8 +404,8 @@ function toggleAllModeChangePort_sync(current_diagram, nextState) {
 
   function setDefaultProperty(part) {
     console.log("setDefaultProperty()");
-    var new_name = ""
-    var name_count = 1;
+    let new_name = ""
+    let name_count = 1;
     part.data.buildUnit = "";
     if(part.name === "PROCESSING") {
         part.data.WIDTH = 100; 
@@ -421,7 +421,7 @@ function toggleAllModeChangePort_sync(current_diagram, nextState) {
     myDiagram.requestUpdate()
   }
   function findNumOfTheCategory(category) {
-    var count = 0;
+    let count = 0;
     myDiagram.nodes.each(node => {
         if(node.part.data.category === category) {
             count = count + 1;
@@ -432,9 +432,9 @@ function toggleAllModeChangePort_sync(current_diagram, nextState) {
 //
 function setKeyUUID(model, data) {
     console.log("NEW setKeyUUID");
-    var new_name = ""
-    var name_count = 1;
-    // var new_key = createKeyUUID();
+    let new_name = ""
+    let name_count = 1;
+    // let new_key = createKeyUUID();
     if(data.category === "processingComponent") {
         name_count = findNumOfTheCategory(data.category);
         do {
@@ -511,7 +511,7 @@ function setKeyUUID(model, data) {
     let uuid = '';
     do {
         uuid = 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-            var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+            let r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
             return v.toString(16);
           });    
     }while(checkIfUUIDExists(uuid));
@@ -519,7 +519,7 @@ function setKeyUUID(model, data) {
     return new_name;
 }
 function checkIfUUIDExists(uuid) {
-    var exist_flag = false;
+    let exist_flag = false;
     myDiagram.nodes.each(function(node) {
         if(uuid == node.part.data.uuid) {
             exist_flag = true;
@@ -529,7 +529,7 @@ function checkIfUUIDExists(uuid) {
     return exist_flag;
 }
 function checkIfNameExists(name) {
-    var exist_flag = false;
+    let exist_flag = false;
     myDiagram.nodes.each(function(node) {
         if(name == node.key) {
             exist_flag = true;
@@ -539,7 +539,7 @@ function checkIfNameExists(name) {
     return exist_flag;
 }
 function alignToPort(e, obj) {
-    var criterion_y = go.Point.parse(obj.part.data.loc).y;
+    let criterion_y = go.Point.parse(obj.part.data.loc).y;
 
     console.log(obj.part.key);
     console.log(obj.part.data.loc);
@@ -573,7 +573,7 @@ function toggleAllStreamPort_sync(current_diagram, nextState) {
       if (node.name === "STREAM_INPUT_PORT" 
           || node.name === "STREAM_OUTPUT_PORT"
           || node.name === "STREAM_DELEGATION_PORT") {
-        var shp = node.findObject("STREAM_PORT");
+        let shp = node.findObject("STREAM_PORT");
         
         if(node.name === "STREAM_INPUT_PORT") {
           if(nextState === true) {                
@@ -617,9 +617,9 @@ function update_portType(node, portType) {
 } 
 function toggleAllStreamPort(current_diagram, obj) {
     console.log("toggleAllStreamPort()");
-    var cur_shp = obj.findObject("STREAM_PORT"); 
+    let cur_shp = obj.findObject("STREAM_PORT"); 
 
-    var nextState;
+    let nextState;
 
     if(obj.name === "STREAM_INPUT_PORT") {
       nextState = !cur_shp.toLinkable;
@@ -639,7 +639,7 @@ function toggleAllEventPort_sync(current_diagram, nextState) {
           || node.name === "EVENT_DELEGATION_INPUT_PORT"
           || node.name === "EVENT_OUTPUT_PORT"
           || node.name === "EVENT_DELEGATION_OUTPUT_PORT") {
-        var shp = node.findObject("EVENT_PORT");             
+        let shp = node.findObject("EVENT_PORT");             
           if(node.name === "EVENT_INPUT_PORT") {
             shp.toSpot = go.Spot.Top;
             shp.fromSpot = go.Spot.Top;
@@ -699,7 +699,7 @@ function toggleAllEventPort_sync(current_diagram, nextState) {
 }
 function createKeyUUID() {
     return 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-      var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+      let r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
       return v.toString(16);
     });       
   }
@@ -711,54 +711,54 @@ function getCurrentObjectName() {
     }
 }
 function isProcessingComponent() {
-    var currentObjectName = getCurrentObjectName();
+    let currentObjectName = getCurrentObjectName();
     return (currentObjectName === "PROCESSING" ? true : false);
 }
 
 function isSourceComponent() {
-    var currentObjectName = getCurrentObjectName();
+    let currentObjectName = getCurrentObjectName();
     return (currentObjectName === "SOURCE" ? true : false);
 }
 
 function isSinkComponent() {
-    var currentObjectName = getCurrentObjectName();
+    let currentObjectName = getCurrentObjectName();
     return (currentObjectName === "SINK" ? true : false);
 }
   
 function isStreamInputPort() {
-    var currentObjectName = getCurrentObjectName();
+    let currentObjectName = getCurrentObjectName();
     return (currentObjectName === "STREAM_INPUT_PORT" ? true : false);
 }
 
 function isStreamOutputPort() {
-    var currentObjectName = getCurrentObjectName();
+    let currentObjectName = getCurrentObjectName();
     return (currentObjectName === "STREAM_OUTPUT_PORT" ? true : false);
 }
 function isEventOutputPort() {
-    var currentObjectName = getCurrentObjectName();
+    let currentObjectName = getCurrentObjectName();
     return (currentObjectName === "EVENT_OUTPUT_PORT" ? true : false);
 }
 function isStreamDelegationPort() {
-    var currentObjectName = getCurrentObjectName();
+    let currentObjectName = getCurrentObjectName();
     return (currentObjectName === "STREAM_DELEGATION_PORT" ? true : false);
 }
   
 function isFusionOperator() {
-    var currentObjectName = getCurrentObjectName();
+    let currentObjectName = getCurrentObjectName();
     return (currentObjectName === "FUSION" ? true : false);
 }
   
 function isFactory() {
-    var currentObjectName = getCurrentObjectName();
+    let currentObjectName = getCurrentObjectName();
     return (currentObjectName === "FACTORY" ? true : false);
 }
 
 function isStreamPort() {
-    var currentObjectName = getCurrentObjectName();
+    let currentObjectName = getCurrentObjectName();
     return(currentObjectName === "STREAM_UNTYPED_PORT" || (isStreamInputPort() || isStreamOutputPort() || isStreamDelegationPort()));
 }
 function isNotStreamPort() {
-    var currentObjectName = getCurrentObjectName();
+    let currentObjectName = getCurrentObjectName();
     return !(currentObjectName === "STREAM_UNTYPED_PORT" || (isStreamInputPort() || isStreamOutputPort() || isStreamDelegationPort()));
 }
 function isChannel(part) {
@@ -794,8 +794,8 @@ function isNotComponent() {
 function relocatePort(part) {
     console.log("relocatePort()");
 
-    var it_memberParts;
-    var memeber_port;
+    let it_memberParts;
+    let memeber_port;
     if(part.name == "SOURCE") {
       
         it_memberParts = part.memberParts;
@@ -821,14 +821,14 @@ function relocatePort(part) {
 }
 
 function setBuildUnit_contextMenu(e, obj) {
-    var buildUnit_name;
+    let buildUnit_name;
     while(true){
         buildUnit_name = prompt("Build Unit name is","Insert Build Unit Name");  
         if(buildUnit_name === null) return;
         if(!myDiagram.model.findNodeDataForKey(buildUnit_name)) break;
         alert("Already Exists");
     }
-    var buildUnit_data = {
+    let buildUnit_data = {
                 category: "buildUnit",  
                 text: buildUnit_name,
             };
@@ -846,7 +846,7 @@ function setBuildUnit_contextMenu(e, obj) {
             myDiagram_buildUnit_selectionPane.model.setParentKeyForNodeData(part.data, buildUnit_name);
         }
         else if(part.name === "FACTORY") {
-            var it = part.memberParts;
+            let it = part.memberParts;
             while (it.next()) {
                 if(it.value.data.buildUnit)
                     continue;
@@ -860,12 +860,12 @@ function setBuildUnit_contextMenu(e, obj) {
             }
         }
     });
-    var arr = myDiagram.model.nodeDataArray;
-    for (var i = 0; i < arr.length; i++) {
-        var data = arr[i];
-        var buildUnit = data.buildUnit;
+    let arr = myDiagram.model.nodeDataArray;
+    for (let i = 0; i < arr.length; i++) {
+        let data = arr[i];
+        let buildUnit = data.buildUnit;
         if (buildUnit) {
-            var sdata = myDiagram.model.findNodeDataForKey(buildUnit);
+            let sdata = myDiagram.model.findNodeDataForKey(buildUnit);
             if (sdata) {
                 // update _supers to be an Array of references to node data
                 if (!data._buildUnit) {
@@ -884,13 +884,13 @@ function setBuildUnit_contextMenu(e, obj) {
     }
 }
 function setBuildUnit_contextMenu_in_selectionPane(e, obj) {
-    var buildUnit_name;
+    let buildUnit_name;
     while(true){
         buildUnit_name = prompt("Build Unit name is","Insert Build Unit Name");  
         if(!myDiagram.model.findNodeDataForKey(buildUnit_name)) break;
         alert("Already Exists");
     }
-    var buildUnit_data = {
+    let buildUnit_data = {
                 category: "buildUnit",  
                 text: buildUnit_name,
             };
@@ -898,15 +898,15 @@ function setBuildUnit_contextMenu_in_selectionPane(e, obj) {
     e.diagram.selection.each(function(part) {
         if(part.data.buildUnit)
                 return;
-        var data = myDiagram.model.findNodeDataForKey(part.key);
+        let data = myDiagram.model.findNodeDataForKey(part.key);
         myDiagram_buildUnit_selectionPane.model.setParentKeyForNodeData(data, buildUnit_name);
     });
-    var arr = myDiagram.model.nodeDataArray;
-    for (var i = 0; i < arr.length; i++) {
-        var data = arr[i];
-        var buildUnit = data.buildUnit;
+    let arr = myDiagram.model.nodeDataArray;
+    for (let i = 0; i < arr.length; i++) {
+        let data = arr[i];
+        let buildUnit = data.buildUnit;
         if (buildUnit) {
-            var sdata = myDiagram.model.findNodeDataForKey(buildUnit);
+            let sdata = myDiagram.model.findNodeDataForKey(buildUnit);
             if (sdata) {
                 // update _supers to be an Array of references to node data
                 if (!data._buildUnit) {
@@ -925,7 +925,7 @@ function setBuildUnit_contextMenu_in_selectionPane(e, obj) {
     }
 }
 function unsetBuildUnit_contextMenu_in_selectionPane(e, obj) {
-    var node = e.diagram.findNodeForKey(obj.part.key);
+    let node = e.diagram.findNodeForKey(obj.part.key);
     e.diagram.remove(node);
 }
 function updateCurrentObject(part) {
@@ -934,19 +934,19 @@ function updateCurrentObject(part) {
 }
 
 function loadFusionRule(obj) {
-    var select_option_left = document.getElementById("myInfo_fusionOperator_mandatory_ports_leftValues");
-    var select_option_right = document.getElementById("myInfo_fusionOperator_mandatory_ports_rightValues");
-    var threshold = document.getElementById("selectedInfo_fusionOperator_rule_optionalNum")
-    var correlation = document.getElementById("selectedInfo_fusionOperator_rule_correlation")
+    let select_option_left = document.getElementById("myInfo_fusionOperator_mandatory_ports_leftValues");
+    let select_option_right = document.getElementById("myInfo_fusionOperator_mandatory_ports_rightValues");
+    let threshold = document.getElementById("selectedInfo_fusionOperator_rule_optionalNum")
+    let correlation = document.getElementById("selectedInfo_fusionOperator_rule_correlation")
 
     myDiagram.nodes.each(function(node) {
         if(node.category === "streamPort" && node.data.port_type === "STREAM_INPUT_PORT") {
             if(node.data.group === obj.part.key) {
-                var option = document.createElement("option");
+                let option = document.createElement("option");
                 option.text = node.key;
                 option.onclick = function(e) {
-                    var name = e.target.innerHTML;
-                    var node = myDiagram.findNodeForKey(name);
+                    let name = e.target.innerHTML;
+                    let node = myDiagram.findNodeForKey(name);
                     nodes_selected_in_fusionrule.clear();
                     nodes_selected_in_fusionrule.add(node);
                     myDiagram.selectCollection(nodes_selected_in_fusionrule);
@@ -976,25 +976,25 @@ function loadFusionRule(obj) {
     }
 }
 function confirmFusionRule(){
-    var optional_ports_selection = document.getElementById("myInfo_fusionOperator_mandatory_ports_leftValues");
-    var optional_ports_ = optional_ports_selection.options;
-    var optional_ports = []
-    for(var i = 0; i < optional_ports_.length; i++) {
+    let optional_ports_selection = document.getElementById("myInfo_fusionOperator_mandatory_ports_leftValues");
+    let optional_ports_ = optional_ports_selection.options;
+    let optional_ports = []
+    for(let i = 0; i < optional_ports_.length; i++) {
         optional_ports[i] = optional_ports_[i].text
     }
-    var mandatory_ports_selection = document.getElementById("myInfo_fusionOperator_mandatory_ports_rightValues");
-    var mandatory_ports_ = mandatory_ports_selection.options;
-    var mandatory_ports = []
-    for(var i = 0; i < mandatory_ports_.length; i++) {
+    let mandatory_ports_selection = document.getElementById("myInfo_fusionOperator_mandatory_ports_rightValues");
+    let mandatory_ports_ = mandatory_ports_selection.options;
+    let mandatory_ports = []
+    for(let i = 0; i < mandatory_ports_.length; i++) {
         mandatory_ports[i] = mandatory_ports_[i].text
     }
-    var threshold = document.getElementById("selectedInfo_fusionOperator_rule_optionalNum").value
-    var correlation = document.getElementById("selectedInfo_fusionOperator_rule_correlation").value
+    let threshold = document.getElementById("selectedInfo_fusionOperator_rule_optionalNum").value
+    let correlation = document.getElementById("selectedInfo_fusionOperator_rule_correlation").value
 
     saveFusionRule(selected_fusion_operator, optional_ports, mandatory_ports, threshold, correlation)
 }
 function saveFusionRule(name, optional_ports, mandatory_ports, threshold, correlation) {
-    var new_data = {
+    let new_data = {
         optional_ports: optional_ports,
         mandatory_ports: mandatory_ports,
         optional_ports_threshold: threshold,
@@ -1005,12 +1005,12 @@ function saveFusionRule(name, optional_ports, mandatory_ports, threshold, correl
         return;
 
     myDiagram.model.setDataProperty(myDiagram.model.findNodeDataForKey(name), "fusionRule", new_data)
-    var btn = document.getElementById("myInfo_fusionOperator_btn_confirm");
+    let btn = document.getElementById("myInfo_fusionOperator_btn_confirm");
     btn.removeEventListener("click", confirmFusionRule)
 }
 
 function checkFusionRule(data) {
-    var text = document.getElementById("myInfo_fusionOperator_text_syntax");
+    let text = document.getElementById("myInfo_fusionOperator_text_syntax");
     
     if(data.mandatory_ports.length === 0) {
         text.innerHTML = "No mandatory port"
@@ -1035,7 +1035,7 @@ function checkFusionRule(data) {
     return true;
 }
 function isChannelExisting(channel) {
-    var flag = false;
+    let flag = false;
     myDiagram.nodes.each(function(node) {
         if(node.name === "STREAM_OUTPUT_PORT" && node.part.data.Channel === channel) {
             flag = true;
@@ -1280,7 +1280,7 @@ const EditProject = (props) => {
             return;
         }
     
-        var result = window.confirm("Are you sure to want to save?");
+        let result = window.confirm("Are you sure to want to save?");
         try {
             if(result) {
                 setLoading(true);
@@ -1301,7 +1301,7 @@ const EditProject = (props) => {
         }
     }
     const request_cancel = () => {
-        var result = window.confirm("Are you sure to want to cancel?");
+        let result = window.confirm("Are you sure to want to cancel?");
         if(result) {
             history.goBack();
         }
@@ -1315,13 +1315,13 @@ const EditProject = (props) => {
             // setLinkDataArray(data.linkDataArray)
             myDiagram.model = go.Model.fromJson(schemaData)
             factory_mode_select_map.clear();
-            var newDataArray = []
+            let newDataArray = []
             myDiagram.nodes.each(function(node) {
-                var parsedData = parsedString.nodeDataArray.find(function(nodeData) {
+                let parsedData = parsedString.nodeDataArray.find(function(nodeData) {
                         if(nodeData.key === node.key) return nodeData;
                     });
                 if(node.part.data.category ==="buildUnit") {
-                    var flag = false;
+                    let flag = false;
                     myDiagram.nodes.each(function(node2) {
                         if(node2.part.data.buildUnit === node.part.data.key && !node2.visible) {
                             flag = true;
@@ -1335,8 +1335,8 @@ const EditProject = (props) => {
                 if(node.part.data.category === "factory") {
                     node.part.data.mode_configuration = parsedData.mode_configuration;
                     factory_mode_select_map.set(node.part.data.key, 0);
-                    var MODE_AREA_NAME_ARRAY = ["MODE_A", "MODE_B", "MODE_C", "MODE_D"];
-                    for(var i = 0; i < node.part.data.mode_configuration.mode_list.length; i++) {
+                    let MODE_AREA_NAME_ARRAY = ["MODE_A", "MODE_B", "MODE_C", "MODE_D"];
+                    for(let i = 0; i < node.part.data.mode_configuration.mode_list.length; i++) {
                         node.findObject(MODE_AREA_NAME_ARRAY[i]).visible = true;
                     }
                     node.memberParts.each(function(node2) {
@@ -1406,12 +1406,12 @@ const EditProject = (props) => {
             myDiagram_buildUnit_selectionPane.requestUpdate();
             myDiagram.model.makeUniqueKeyFunction = setKeyUUID;
             myDiagram_buildUnit_selectionPane.model.makeUniqueKeyFunction = setKeyUUID;
-            var arr = myDiagram.model.nodeDataArray;
-            for (var i = 0; i < arr.length; i++) {
-                var data = arr[i];
-                var buildUnit = data.buildUnit;
+            let arr = myDiagram.model.nodeDataArray;
+            for (let i = 0; i < arr.length; i++) {
+                let data = arr[i];
+                let buildUnit = data.buildUnit;
                 if (buildUnit) {
-                    var sdata = myDiagram.model.findNodeDataForKey(buildUnit);
+                    let sdata = myDiagram.model.findNodeDataForKey(buildUnit);
                     if (sdata) {
                         // update _supers to be an Array of references to node data
                         if (!data._buildUnit) {
@@ -1436,7 +1436,7 @@ const EditProject = (props) => {
         
         myDiagram.nodes.each(function(node) {
             if(node.part.data.category ==="buildUnit") {
-                var flag = false;
+                let flag = false;
                 myDiagram.nodes.each(function(node2) {
                     if(node2.part.data.buildUnit === node.part.data.key && !node2.visible) {
                         flag = true;
@@ -1450,9 +1450,9 @@ const EditProject = (props) => {
                 console.log(node.part.data.key, node.part.data.mode_configuration)
                 if(!factory_mode_select_map.get(node.part.data.key))
                     factory_mode_select_map.set(node.part.data.key, 0);
-                var MODE_AREA_NAME_ARRAY = ["MODE_A", "MODE_B", "MODE_C", "MODE_D"];
+                let MODE_AREA_NAME_ARRAY = ["MODE_A", "MODE_B", "MODE_C", "MODE_D"];
                 if(node.part.data.mode_configuration) {
-                    for(var i = 0; i < node.part.data.mode_configuration.mode_list.length; i++) {
+                    for(let i = 0; i < node.part.data.mode_configuration.mode_list.length; i++) {
                         let obj = node.findObject(MODE_AREA_NAME_ARRAY[i])
                         obj.visible = true;
                         const index = factory_mode_select_map.get(node.part.data.key);
@@ -1517,7 +1517,7 @@ const EditProject = (props) => {
                 "ChangedSelection": function(e) {
                     if (myChangingSelection) return;
                     myChangingSelection = true;
-                    var diagnodes = new go.Set();
+                    let diagnodes = new go.Set();
                     myDiagram.selection.each(function(n) {
                         diagnodes.add(myDiagram_buildUnit_selectionPane.findNodeForData(n.data));
                     });
@@ -1592,7 +1592,7 @@ const EditProject = (props) => {
                             })
                         }
                         else {
-                            var flag = false;
+                            let flag = false;
                             myDiagram.nodes.each(function(node) {
                                 if(node.part.data.mode === part.data.mode) {
                                     flag = true;
@@ -1625,7 +1625,7 @@ const EditProject = (props) => {
                 
                 ObjectSingleClicked: function(e) {
                     console.log("ObjectSingleClicked()");
-                    var selected = e.subject.part;
+                    let selected = e.subject.part;
                     externalDroppedObjectName = "NONE";
                     internalSelectedObjectName = selected.name;
                     //setDefaultProperty(selected);
@@ -1639,7 +1639,7 @@ const EditProject = (props) => {
     
                 ObjectContextClicked: function(e) {
                     console.log("ObjectContextClicked()");
-                    var selected = e.subject.part;
+                    let selected = e.subject.part;
                     externalDroppedObjectName = "NONE";
                     internalSelectedObjectName = selected.name;
                     if(selected.data.category === 'streamPort' && selected.data.port_type === 'STREAM_INPUT_PORT') 
@@ -1688,7 +1688,7 @@ const EditProject = (props) => {
                     deactivateAllStreamPort(e.diagram);
                     deactivateAllEventPort(e.diagram);
     
-                    //var selected = e.subject.part;
+                    //let selected = e.subject.part;
                     //selected.data.segArray = selected.flattenedLengths.toString();
     
                     inspector.inspectObject();
@@ -1808,7 +1808,7 @@ const EditProject = (props) => {
             handleOpenFusionModal();
         }
         function setEventName(e, obj) {
-            var event = obj.part.data.Event ? obj.part.data.Event : "";
+            let event = obj.part.data.Event ? obj.part.data.Event : "";
             while(true){
                 event = prompt("Event name is", obj.part.data.Event ? obj.part.data.Event : "Insert Event Name");  
                 if(!isEventExisting(event)) break;
@@ -1818,7 +1818,7 @@ const EditProject = (props) => {
                 myDiagram.model.setDataProperty(obj.part.data, "Event", event);
         }
         function isEventExisting(event) {
-            var flag = false;
+            let flag = false;
             myDiagram.nodes.each(function(node) {
                 if(node.part.data.category === "eventOutputPort" && node.part.data.Event === event) {
                     flag = true;
@@ -1894,7 +1894,7 @@ const EditProject = (props) => {
           function finishDrop_component(e, grp) {
                 console.log("finishDrop_component");
 
-                var collection = new go.List();
+                let collection = new go.List();
                 grp.diagram.selection.each(function(part) {
                 if(part.category === "buildUnit") {
                     myDiagram.nodes.each(function(part2) {
@@ -1907,7 +1907,7 @@ const EditProject = (props) => {
                 }
                 })
     
-            var ok = (grp !== null
+            let ok = (grp !== null
                 ?  
                     grp.addMembers(collection, true) 
                 :   
@@ -1916,7 +1916,7 @@ const EditProject = (props) => {
             }
         function finishDrop_component_buldUnit(e, grp) {
             console.log("finishDrop_component_buildUnit");
-            var ok = (highlighted_factory !== null
+            let ok = (highlighted_factory !== null
                 ?  
                     highlighted_factory.addMembers(myDiagram.selection, true) 
                 : 
@@ -1926,7 +1926,7 @@ const EditProject = (props) => {
             if (!ok) e.diagram.currentTool.doCancel();
         }
         function unset_buildUnit(e, obj) {
-            var node = e.diagram.findNodeForKey(obj.part.key);
+            let node = e.diagram.findNodeForKey(obj.part.key);
             e.diagram.remove(node);
         }
         function splash_streamPortStyle() {
@@ -1959,7 +1959,7 @@ const EditProject = (props) => {
               cursor: "pointer",
             };
           } 
-          var template_eventInputPort = 
+          let template_eventInputPort = 
           $(go.Node, "Spot", splash_portStyle(),
             { 
               name: "EVENT_INPUT_PORT",
@@ -1976,7 +1976,7 @@ const EditProject = (props) => {
         ); 
       
       
-        var template_eventOutputPort = 
+        let template_eventOutputPort = 
           $(go.Node, "Spot", splash_portStyle(),
             { 
               name: "EVENT_OUTPUT_PORT",
@@ -2020,7 +2020,7 @@ const EditProject = (props) => {
             };
           } 
           
-        var template_modeChangeInputPort = 
+        let template_modeChangeInputPort = 
           $(go.Node, "Spot", splash_portStyle(),
             { 
               name: "MODECHANGE_INPUT_PORT",
@@ -2046,7 +2046,7 @@ const EditProject = (props) => {
           ); 
         
         
-        var template_modeChangeOutputPort = 
+        let template_modeChangeOutputPort = 
           $(go.Node, "Spot", splash_portStyle(),
             { 
               name: "MODECHANGE_OUTPUT_PORT",
@@ -2077,8 +2077,8 @@ const EditProject = (props) => {
             if (show) {
               // cannot depend on the grp.diagram.selection in the case of external drag-and-drops;
               // instead depend on the DraggingTool.draggedParts or .copiedParts
-              var tool = grp.diagram.toolManager.draggingTool;
-              var map = tool.draggedParts || tool.copiedParts;  // this is a Map
+              let tool = grp.diagram.toolManager.draggingTool;
+              let map = tool.draggedParts || tool.copiedParts;  // this is a Map
               // now we can check to see if the Group will accept membership of the dragged Parts
               if (grp.canAddMembers(map.toKeySet())) {    
                 return;
@@ -2090,11 +2090,11 @@ const EditProject = (props) => {
             grp.findObject("AREA_MODECHANGE_PORT").fill = null;
           };
           
-          var isIncoming_toProcessingComponent = false;
-          var posX_atProcessingComponent;
-          var posY_atProcessingComponent;
-          var portType_atProcessingComponent;
-          var template_processingComponent =
+          let isIncoming_toProcessingComponent = false;
+          let posX_atProcessingComponent;
+          let posY_atProcessingComponent;
+          let portType_atProcessingComponent;
+          let template_processingComponent =
             $(go.Group, "Spot", splash_atomicComponentStyle(),
               {
                 name: "PROCESSING",   
@@ -2107,7 +2107,7 @@ const EditProject = (props) => {
                         },
                         new go.Binding("visible", "", 
                             function(o) {
-                                var data = myDiagram.model.findNodeDataForKey(o.key);
+                                let data = myDiagram.model.findNodeDataForKey(o.key);
                                 return data.buildUnit === "" || data.buildUnit === undefined
                             }
                         )
@@ -2125,12 +2125,12 @@ const EditProject = (props) => {
     
                 memberValidation: function(grp, node) {
                   console.log("memberValidation()");
-                  var selectedName = node.name;
-                  var grp_loc = new go.Point(0, 0);
-                  var node_loc = new go.Point(0, 0);
+                  let selectedName = node.name;
+                  let grp_loc = new go.Point(0, 0);
+                  let node_loc = new go.Point(0, 0);
                   
-                  var grp_height = grp.actualBounds.height;
-                  var grp_width = grp.actualBounds.width;              
+                  let grp_height = grp.actualBounds.height;
+                  let grp_width = grp.actualBounds.width;              
                   
                   if (grp !== null && grp.location.isReal()) {
                     grp_loc = grp.location;
@@ -2280,8 +2280,8 @@ const EditProject = (props) => {
                 if (show) {
                   // cannot depend on the grp.diagram.selection in the case of external drag-and-drops;
                   // instead depend on the DraggingTool.draggedParts or .copiedParts
-                  var tool = grp.diagram.toolManager.draggingTool;
-                  var map = tool.draggedParts || tool.copiedParts;  // this is a Map
+                  let tool = grp.diagram.toolManager.draggingTool;
+                  let map = tool.draggedParts || tool.copiedParts;  // this is a Map
                   // now we can check to see if the Group will accept membership of the dragged Parts
                   if (grp.canAddMembers(map.toKeySet())) {    
                     return;
@@ -2290,10 +2290,10 @@ const EditProject = (props) => {
                 grp.findObject("AREA_STREAM_OUTPUT_PORT").fill = null;
               };
             
-            var isIncoming_toSourceComponent = false;
-            var posX_atSourceComponent;
-            var posY_atSourceComponent;
-            var template_sourceComponent = 
+            let isIncoming_toSourceComponent = false;
+            let posX_atSourceComponent;
+            let posY_atSourceComponent;
+            let template_sourceComponent = 
               $(go.Group, "Spot", splash_atomicComponentStyle(),
                 { 
                   name: "SOURCE",
@@ -2319,13 +2319,13 @@ const EditProject = (props) => {
                   memberValidation: function(grp, node) {
                     console.log("memberValidation()");
                     
-                    var selectedName = node.name;
+                    let selectedName = node.name;
                     
-                    var grp_loc = new go.Point(0, 0);
-                    var node_loc = new go.Point(0, 0);
+                    let grp_loc = new go.Point(0, 0);
+                    let node_loc = new go.Point(0, 0);
                     
-                    var grp_height = grp.actualBounds.height;
-                    var grp_width = grp.actualBounds.width;          
+                    let grp_height = grp.actualBounds.height;
+                    let grp_width = grp.actualBounds.width;          
                     
                     if (grp !== null && grp.location.isReal()) {
                        grp_loc = grp.location;
@@ -2398,8 +2398,8 @@ const EditProject = (props) => {
                 if (show) {
                   // cannot depend on the grp.diagram.selection in the case of external drag-and-drops;
                   // instead depend on the DraggingTool.draggedParts or .copiedParts
-                  var tool = grp.diagram.toolManager.draggingTool;
-                  var map = tool.draggedParts || tool.copiedParts;  // this is a Map
+                  let tool = grp.diagram.toolManager.draggingTool;
+                  let map = tool.draggedParts || tool.copiedParts;  // this is a Map
                   // now we can check to see if the Group will accept membership of the dragged Parts
                   if (grp.canAddMembers(map.toKeySet())) {    
                     return;
@@ -2408,10 +2408,10 @@ const EditProject = (props) => {
                 grp.findObject("AREA_STREAM_INPUT_PORT").fill = null;
               };
             
-            var isIncoming_toSinkComponent = false;
-            var posX_atSinkComponent;
-            var posY_atSinkComponent;
-            var template_sinkComponent = 
+            let isIncoming_toSinkComponent = false;
+            let posX_atSinkComponent;
+            let posY_atSinkComponent;
+            let template_sinkComponent = 
               $(go.Group, "Spot", splash_atomicComponentStyle(),
                 { 
                   name: "SINK",
@@ -2432,7 +2432,7 @@ const EditProject = (props) => {
                   },                          
     
                   memberAdded: function(grp, node) {
-                    var selectedName = node.name;
+                    let selectedName = node.name;
                     grp.data.haveInputPort = true;
                   },
                   memberRemoved: function(grp, node) {
@@ -2444,13 +2444,13 @@ const EditProject = (props) => {
                     console.log("memberValidation()");
     
                     
-                    var selectedName = node.name;
+                    let selectedName = node.name;
                     
-                    var grp_loc = new go.Point(0, 0);
-                    var node_loc = new go.Point(0, 0);
+                    let grp_loc = new go.Point(0, 0);
+                    let node_loc = new go.Point(0, 0);
                     
-                    var grp_height = grp.actualBounds.height;
-                    var grp_width = grp.actualBounds.width;              
+                    let grp_height = grp.actualBounds.height;
+                    let grp_width = grp.actualBounds.width;              
                     
                     if (grp !== null && grp.location.isReal()) {
                       grp_loc = grp.location;
@@ -2530,8 +2530,8 @@ const EditProject = (props) => {
                 if (show) {
                   // cannot depend on the grp.diagram.selection in the case of external drag-and-drops;
                   // instead depend onqqq the DraggingTool.draggedParts or .copiedParts
-                  var tool = grp.diagram.toolManager.draggingTool;
-                  var map = tool.draggedParts || tool.copiedParts;  // this is a Map
+                  let tool = grp.diagram.toolManager.draggingTool;
+                  let map = tool.draggedParts || tool.copiedParts;  // this is a Map
                   // now we can check to see if the Group will accept membership of the dragged Parts
                   if (grp.canAddMembers(map.toKeySet())) {    
                     return;
@@ -2542,11 +2542,11 @@ const EditProject = (props) => {
               };
       
              
-              var isIncoming_toFusionOperator = false;
-              var posX_atFusionOperator;
-              var posY_atFusionOperator;
-              var portType_atFusionOperator;
-            var template_fusionOperator =
+              let isIncoming_toFusionOperator = false;
+              let posX_atFusionOperator;
+              let posY_atFusionOperator;
+              let portType_atFusionOperator;
+            let template_fusionOperator =
             $(go.Group, "Spot", splash_atomicComponentStyle(),
               {
                 name: "FUSION",
@@ -2559,7 +2559,7 @@ const EditProject = (props) => {
                         },
                         new go.Binding("visible", "", 
                             function(o) {
-                                var data = myDiagram.model.findNodeDataForKey(o.key);
+                                let data = myDiagram.model.findNodeDataForKey(o.key);
                                 return data.buildUnit === "" || data.buildUnit === undefined
                             }
                         )
@@ -2583,7 +2583,7 @@ const EditProject = (props) => {
                 },                          
                 
                 memberAdded: function(grp, node) {
-                  var selectedName = node.name;
+                  let selectedName = node.name;
                   if(node.name === "STREAM_OUTPUT_PORT") {
                     grp.data.haveOutputPort = true;
                     node.movable = false;
@@ -2597,11 +2597,11 @@ const EditProject = (props) => {
                 
                 memberValidation: function(grp, node) {
                   console.log("memberValidation()");
-                  var selectedName = node.name;
-                  var grp_loc = new go.Point(0, 0);
-                  var node_loc = new go.Point(0, 0);
-                  var grp_height = grp.actualBounds.height;
-                  var grp_width = grp.actualBounds.width;              
+                  let selectedName = node.name;
+                  let grp_loc = new go.Point(0, 0);
+                  let node_loc = new go.Point(0, 0);
+                  let grp_height = grp.actualBounds.height;
+                  let grp_width = grp.actualBounds.width;              
                   
                   if (grp !== null && grp.location.isReal()) {
                     grp_loc = grp.location;
@@ -2715,13 +2715,13 @@ const EditProject = (props) => {
                   }
               ),            
             ); 
-            var isIncoming_toFactory = false;
-            var posX_atFactory;
-            var posY_atFactory;
-            var portType_atFactory;
+            let isIncoming_toFactory = false;
+            let posX_atFactory;
+            let posY_atFactory;
+            let portType_atFactory;
             go.Shape.defineFigureGenerator("NoBottomRectangle", function(shape, w, h) {
                 // this figure takes one parameter, the size of the corner
-                var geo = new go.Geometry();
+                let geo = new go.Geometry();
                 // a single figure consisting of straight lines and quarter-circle arcs
                 geo.add(new go.PathFigure(0, h*0.87, false)
                  .add(new go.PathSegment(go.PathSegment.Line, 0, 0))
@@ -2736,7 +2736,7 @@ const EditProject = (props) => {
                 // don't intersect with two top corners when used in an "Auto" Panel
                 return geo;
             });
-            var template_factory =
+            let template_factory =
             $(go.Group, "Spot", splash_factoryStyle(),
               {
                 name: "FACTORY",
@@ -2759,7 +2759,7 @@ const EditProject = (props) => {
                     }
                     if(node.category === "modeChangeInputPort" && isDragging) {
                         grp.findObject("MODE_A").visible = true;
-                        var data = {"initial_mode": "Mode_A", "mode_list":[{"name": "Mode_A", "events": [{"name": "event_1", "next_mode": "Mode_A", "output_internal_data_items": false}]}]}
+                        let data = {"initial_mode": "Mode_A", "mode_list":[{"name": "Mode_A", "events": [{"name": "event_1", "next_mode": "Mode_A", "output_internal_data_items": false}]}]}
                         myDiagram.model.setDataProperty(myDiagram.model.findNodeDataForKey(grp.key), "mode_configuration", data)
                         myDiagram.nodes.each(function(node2) {
                             if(node2.part.data.group === grp.key) {
@@ -2773,7 +2773,7 @@ const EditProject = (props) => {
                         myDiagram.model.setDataProperty(node.part.data, "mode", grp.part.data.mode_configuration.mode_list[factory_mode_select_map.get(grp.key)].name)
                     }
                     if(grp.part.data.mode_configuration) {
-                        var flag = false;
+                        let flag = false;
                         if(node.category !== "modeChangeInputPort" && factory_mode_select_map.get(grp.key) > 0) {
                             flag = true;
                         }
@@ -2791,11 +2791,11 @@ const EditProject = (props) => {
     
                 memberValidation: function(grp, node) {
                   console.log("memberValidation()");
-                  var selectedName = node.name;
-                  var grp_loc = new go.Point(0, 0);
-                  var node_loc = new go.Point(0, 0);
-                  var grp_height = grp.actualBounds.height;
-                  var grp_width = grp.actualBounds.width;              
+                  let selectedName = node.name;
+                  let grp_loc = new go.Point(0, 0);
+                  let node_loc = new go.Point(0, 0);
+                  let grp_height = grp.actualBounds.height;
+                  let grp_width = grp.actualBounds.width;              
                   
                   if (grp !== null && grp.location.isReal()) {
                     grp_loc = grp.location;
@@ -2849,7 +2849,7 @@ const EditProject = (props) => {
                             // || selectedName === "MODECHANGE_DELEGATION_OUTPUT_PORT") {
                     if(isIncoming_toFactory) {
                         grp.findObject("AREA_MODECHANGE_PORT").fill = "yellow";
-                        var flag = false;
+                        let flag = false;
                         myDiagram.nodes.each(function(part) {
                             if(part.data.category === node.data.category
                                 && part.data.group === grp.key) flag = true;
@@ -2904,13 +2904,13 @@ const EditProject = (props) => {
                         },
                         new go.Binding("visible", "", 
                             function(o) {
-                                var list = []
+                                let list = []
                                 myDiagram.nodes.each(function(node) {
                                     if (node.data.group === o.key) {
                                         list.push(node);
                                     }
                                 });
-                                var flag = false;
+                                let flag = false;
                                 list.forEach(function(node) {
                                     if(
                                         node.data.category === "sourceComponent" ||
@@ -2933,7 +2933,7 @@ const EditProject = (props) => {
                       },
                       new go.Binding("visible", "", 
                             function(o) {
-                                var flag = false;
+                                let flag = false;
                                 myDiagram.nodes.each(function(node) {
                                     if(node.category === "modeChangeInputPort") {
                                         console.log(node.data.group)
@@ -3059,7 +3059,7 @@ const EditProject = (props) => {
                     return false;
                 }),
                 new go.Binding("alignment", "HEIGHT", function(data, node) {
-                    var new_y = Math.max(0.0507 * Math.exp(-0.002* data), 0.0052);
+                    let new_y = Math.max(0.0507 * Math.exp(-0.002* data), 0.0052);
                     return new go.Spot(0.07, new_y, 0, 0);
                 }),
                 $(go.Shape, "NoBottomRectangle",
@@ -3088,14 +3088,14 @@ const EditProject = (props) => {
                         return data.mode_list[0].name;
                     }),
                     new go.Binding("stroke", "", function(data, node) {
-                        var value = factory_mode_select_map.get(data.key);
+                        let value = factory_mode_select_map.get(data.key);
                         if(value === 0 || value === undefined) {
                             return "blue";
                         }
                         return 'black';
                     }),
                     new go.Binding("font", "", function(data, node) {
-                        var value = factory_mode_select_map.get(data.key);
+                        let value = factory_mode_select_map.get(data.key);
                         if(value === 0 || value === undefined) {
                             return "bold 10pt sans-serif";
                         }
@@ -3114,7 +3114,7 @@ const EditProject = (props) => {
                     }
                 },
                 new go.Binding("alignment", "HEIGHT", function(data, node) {
-                    var new_y = Math.max(0.0507 * Math.exp(-0.002* data), 0.0052);
+                    let new_y = Math.max(0.0507 * Math.exp(-0.002* data), 0.0052);
                     return new go.Spot(0.27, new_y, 0, 0);
                 }),
                 new go.Binding("visible", "", function(o) {
@@ -3148,14 +3148,14 @@ const EditProject = (props) => {
                         return data.mode_list[1].name;
                     }),
                     new go.Binding("stroke", "", function(data, node) {
-                        var value = factory_mode_select_map.get(data.key);
+                        let value = factory_mode_select_map.get(data.key);
                         if(value === 1) {
                             return "blue";
                         }
                         return 'black';
                     }),
                     new go.Binding("font", "", function(data, node) {
-                        var value = factory_mode_select_map.get(data.key);
+                        let value = factory_mode_select_map.get(data.key);
                         if(value === 1) {
                             return "bold 10pt sans-serif";
                         }
@@ -3182,7 +3182,7 @@ const EditProject = (props) => {
                     return false;
                 }),
                 new go.Binding("alignment", "HEIGHT", function(data, node) {
-                    var new_y = Math.max(0.0507 * Math.exp(-0.002* data), 0.0052);
+                    let new_y = Math.max(0.0507 * Math.exp(-0.002* data), 0.0052);
                     return new go.Spot(0.47, new_y, 0, 0);
                 }),
                 $(go.Shape, "NoBottomRectangle",
@@ -3208,14 +3208,14 @@ const EditProject = (props) => {
                         return data.mode_list[2].name;
                     }),
                     new go.Binding("stroke", "", function(data, node) {
-                        var value = factory_mode_select_map.get(data.key);
+                        let value = factory_mode_select_map.get(data.key);
                         if(value === 2) {
                             return "blue";
                         }
                         return 'black';
                     }),
                     new go.Binding("font", "", function(data, node) {
-                        var value = factory_mode_select_map.get(data.key);
+                        let value = factory_mode_select_map.get(data.key);
                         if(value === 2) {
                             return "bold 10pt sans-serif";
                         }
@@ -3242,7 +3242,7 @@ const EditProject = (props) => {
                     return false;
                 }),
                 new go.Binding("alignment", "HEIGHT", function(data, node) {
-                    var new_y = Math.max(0.0507 * Math.exp(-0.002* data), 0.0052);
+                    let new_y = Math.max(0.0507 * Math.exp(-0.002* data), 0.0052);
                     return new go.Spot(0.67, new_y, 0, 0);
                 }),
                 $(go.Shape, "NoBottomRectangle",
@@ -3268,14 +3268,14 @@ const EditProject = (props) => {
                         return data.mode_list[3].name;
                     }),
                     new go.Binding("stroke", "", function(data, node) {
-                        var value = factory_mode_select_map.get(data.key);
+                        let value = factory_mode_select_map.get(data.key);
                         if(value === 3) {
                             return "blue";
                         }
                         return 'black';
                     }),
                     new go.Binding("font", "", function(data, node) {
-                        var value = factory_mode_select_map.get(data.key);
+                        let value = factory_mode_select_map.get(data.key);
                         if(value === 3) {
                             return "bold 10pt sans-serif";
                         }
@@ -3335,7 +3335,7 @@ const EditProject = (props) => {
             ));
           myDiagram.model.makeUniqueKeyFunction = setKeyUUID;
           myDiagram.model.copyNodeDataFunction = function(data, model) {
-                var shallowCopiedObject = JSON.parse(JSON.stringify(data))
+                let shallowCopiedObject = JSON.parse(JSON.stringify(data))
                 shallowCopiedObject.key = setKeyUUID(model, shallowCopiedObject);
                 return shallowCopiedObject;
           };
@@ -3344,18 +3344,18 @@ const EditProject = (props) => {
             console.log('calcPortLocation')
             if(node.isSelected) return go.Point.parse(data);
     
-            var node_loc = go.Point.parse(data); // go.Point form
-            var node_x = node_loc.x;
-            var node_y = node_loc.y;
-            var grp = node.containingGroup; 
+            let node_loc = go.Point.parse(data); // go.Point form
+            let node_x = node_loc.x;
+            let node_y = node_loc.y;
+            let grp = node.containingGroup; 
     
-            var grp_loc = grp.location;
-            var grp_x = grp_loc.x;
-            var grp_y = grp_loc.y;
-            var grp_width = grp.actualBounds.width;
-            var grp_height = grp.actualBounds.height;
-            //var grp_height = grp.actualBounds.height;
-            //var node_y_rel = (grp_y-node_y)/(grp_height/2);
+            let grp_loc = grp.location;
+            let grp_x = grp_loc.x;
+            let grp_y = grp_loc.y;
+            let grp_width = grp.actualBounds.width;
+            let grp_height = grp.actualBounds.height;
+            //let grp_height = grp.actualBounds.height;
+            //let node_y_rel = (grp_y-node_y)/(grp_height/2);
     
             if(node.name === "STREAM_OUTPUT_PORT"
               || node.name === "STREAM_INPUT_PORT"
@@ -3427,7 +3427,7 @@ const EditProject = (props) => {
         includesOwnProperties: false,
         multipleSelection: true,
         propertyModified: function(prop, new_value, inspector) {
-            var node = inspector.inspectedObject; 
+            let node = inspector.inspectedObject; 
             console.log('propertyModefied')
         },
         properties: {
@@ -3449,9 +3449,9 @@ const EditProject = (props) => {
             // uncomment this line to only inspect the named properties below instead of all properties on each object:
             includesOwnProperties: false,
             propertyModified: function(prop, new_value, inspector) {
-            var node = inspector.inspectedObject; 
+            let node = inspector.inspectedObject; 
     
-            var shape = node.findObject("SHAPE");
+            let shape = node.findObject("SHAPE");
             //shape.fill = node.data.color;
             },
             properties: {
@@ -3475,7 +3475,7 @@ const EditProject = (props) => {
                     myDiagram.clearSelection();
                 }
             });
-            var paletteTemplate_streamPort = 
+            let paletteTemplate_streamPort = 
             $(go.Node, "Spot",
               new go.Binding("isShadowed", "isSelected").ofObject(),
               {
@@ -3505,7 +3505,7 @@ const EditProject = (props) => {
                   alignment: new go.Spot(0.7, 0.5) 
                 }),            
             );                        
-        var sharedToolTip =
+        let sharedToolTip =
             $("ToolTip",
               { "Border.figure": "RoundedRectangle" },
               $(go.TextBlock, { margin: 2 },
@@ -3546,7 +3546,7 @@ const EditProject = (props) => {
             "ChangedSelection": function(e) {
                 if (myChangingSelection) return;
                 myChangingSelection = true;
-                var diagnodes = new go.Set();
+                let diagnodes = new go.Set();
                 myDiagram_buildUnit_selectionPane.selection.each(function(n) {
                     diagnodes.add(myDiagram.findNodeForData(n.data));
                 });
@@ -3573,7 +3573,7 @@ const EditProject = (props) => {
                     },
                     new go.Binding("visible", "", 
                         function(o) {
-                            var data = myDiagram.model.findNodeDataForKey(o.key);
+                            let data = myDiagram.model.findNodeDataForKey(o.key);
                             return data.category !== "buildUnit" && ( data.buildUnit === "" || data.buildUnit === undefined)
                         }
                     )
@@ -3585,7 +3585,7 @@ const EditProject = (props) => {
                     },
                     new go.Binding("visible", "", 
                         function(o) {
-                            var data = myDiagram.model.findNodeDataForKey(o.key);
+                            let data = myDiagram.model.findNodeDataForKey(o.key);
                             return data.category === "buildUnit"
                         }
                     )
@@ -3619,11 +3619,11 @@ const EditProject = (props) => {
         // don't need to start/commit a transaction because the UndoManager is shared with myDiagram_buildUnit_selectionPane
         if (e.modelChange === "nodeGroupKey" || e.modelChange === "nodeParentKey") {
             // handle structural change: group memberships
-            var treenode = myDiagram_buildUnit_selectionPane.findNodeForData(e.object);
+            let treenode = myDiagram_buildUnit_selectionPane.findNodeForData(e.object);
             if (treenode !== null) treenode.updateRelationshipsFromData();
         } 
         else if (e.change === go.ChangedEvent.Property) {
-            var treenode = myDiagram_buildUnit_selectionPane.findNodeForData(e.object);
+            let treenode = myDiagram_buildUnit_selectionPane.findNodeForData(e.object);
             if (treenode !== null) treenode.updateTargetBindings();
         } 
         else if (e.change === go.ChangedEvent.Insert && e.propertyName === "nodeDataArray") {
@@ -3641,7 +3641,7 @@ const EditProject = (props) => {
         } 
         else if (e.change === go.ChangedEvent.Remove && e.propertyName === "nodeDataArray") {
             // remove the corresponding node from myDiagram_buildUnit_selectionPane
-            var treenode = myDiagram_buildUnit_selectionPane.findNodeForData(e.oldValue);
+            let treenode = myDiagram_buildUnit_selectionPane.findNodeForData(e.oldValue);
             if (treenode !== null) myDiagram_buildUnit_selectionPane.remove(treenode);
         }
         myChangingModel = false;
@@ -3654,11 +3654,11 @@ const EditProject = (props) => {
         // don't need to start/commit a transaction because the UndoManager is shared with myDiagram
         if (e.modelChange === "nodeGroupKey" || e.modelChange === "nodeParentKey") {
             // handle structural change: tree parent/children
-            var node = myDiagram.findNodeForData(e.object);
+            let node = myDiagram.findNodeForData(e.object);
             if (node !== null) node.updateRelationshipsFromData();
         } else if (e.change === go.ChangedEvent.Property) {
             // propagate simple data property changes back to the main Diagram
-            var node = myDiagram.findNodeForData(e.object);
+            let node = myDiagram.findNodeForData(e.object);
             if (node !== null) node.updateTargetBindings();
         } else if (e.change === go.ChangedEvent.Insert && e.propertyName === "nodeDataArray") {
             // pretend the new data isn't already in the nodeDataArray for the main Diagram model
@@ -3667,12 +3667,12 @@ const EditProject = (props) => {
             myDiagram.model.addNodeData(e.newValue);
         } else if (e.change === go.ChangedEvent.Remove && e.propertyName === "nodeDataArray") {
             // remove the corresponding node from the main Diagram
-            var node = myDiagram.findNodeForData(e.oldValue);
+            let node = myDiagram.findNodeForData(e.oldValue);
             if (node !== null) myDiagram.remove(node);
         }
         myChangingModel = false;
         });
-        var paletteTemplate_eventInputPort = 
+        let paletteTemplate_eventInputPort = 
             $(go.Node, "Spot",
               new go.Binding("isShadowed", "isSelected").ofObject(),
               {
@@ -3702,7 +3702,7 @@ const EditProject = (props) => {
                   alignment: new go.Spot(0.7, 0.5) }),            
             );     
     
-      var paletteTemplate_eventOutputPort = 
+      let paletteTemplate_eventOutputPort = 
             $(go.Node, "Spot",
               new go.Binding("isShadowed", "isSelected").ofObject(),
               {
@@ -3732,7 +3732,7 @@ const EditProject = (props) => {
                   alignment: new go.Spot(0.7, 0.5) }),            
             );  
             
-        var paletteTemplate_modeChangeInputPort = 
+        let paletteTemplate_modeChangeInputPort = 
             $(go.Node, "Spot",
               new go.Binding("isShadowed", "isSelected").ofObject(),
               {
@@ -3766,7 +3766,7 @@ const EditProject = (props) => {
                   alignment: new go.Spot(0.7, 0.5) }),            
             );                   
     
-        var paletteTemplate_modeChangeOutputPort = 
+        let paletteTemplate_modeChangeOutputPort = 
             $(go.Node, "Spot",
               new go.Binding("isShadowed", "isSelected").ofObject(),
               {
@@ -3801,7 +3801,7 @@ const EditProject = (props) => {
                   alignment: new go.Spot(0.7, 0.5) }),            
             ); 
     
-        var paletteTemplate_processingComponent =
+        let paletteTemplate_processingComponent =
             $(go.Group, "Spot",
               { name: "PALETTE_PROCESSING_COMPONENT", locationSpot: go.Spot.Center },
               new go.Binding("isShadowed", "isSelected").ofObject(),
@@ -3827,7 +3827,7 @@ const EditProject = (props) => {
                   alignment: new go.Spot(0.7, 0.5) }),              
             );         
     
-        var paletteTemplate_sourceComponent = 
+        let paletteTemplate_sourceComponent = 
             $(go.Node, "Spot",
               { name: "PALETTE_SOURCE_COMPONENT", locationSpot: go.Spot.Center },
               new go.Binding("isShadowed", "isSelected").ofObject(),
@@ -3857,7 +3857,7 @@ const EditProject = (props) => {
                   alignment: new go.Spot(0.7, 0.5) }),      
             );         
       
-        var paletteTemplate_sinkComponent =
+        let paletteTemplate_sinkComponent =
             $(go.Node, "Spot",
               { name: "SINK_COMPONENT", locationSpot: go.Spot.Center },
               new go.Binding("isShadowed", "isSelected").ofObject(),
@@ -3887,7 +3887,7 @@ const EditProject = (props) => {
                   alignment: new go.Spot(0.7, 0.5) }),            
             ); 
       
-        var paletteTemplate_fusionOperator =
+        let paletteTemplate_fusionOperator =
             $(go.Group, "Spot",
               { name: "PALETTE_FUSION_COMPONENT", locationSpot: go.Spot.Center },
               new go.Binding("isShadowed", "isSelected").ofObject(),
@@ -3913,7 +3913,7 @@ const EditProject = (props) => {
                   alignment: new go.Spot(0.7, 0.5) }),              
             );
       
-        var paletteTemplate_factory =
+        let paletteTemplate_factory =
             $(go.Group, "Spot",
               { name: "PALETTE_FACTORY", locationSpot: go.Spot.Center },
               new go.Binding("isShadowed", "isSelected").ofObject(),
