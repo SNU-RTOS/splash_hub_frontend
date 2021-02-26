@@ -11,6 +11,7 @@ import SignOut from './pages/SignOut';
 import SignUp from './pages/SignUp';
 import Auth from './utils/auth';
 import EditProject2 from './pages/EditProject2';
+import IDE from './pages/IDE';
 const App = () => {
   return (
     <div style={{backgroundColor: 'white'}}>
@@ -26,6 +27,7 @@ const App = () => {
             <Route path="/search" component={Auth(Explore, null)} />
             <Route path="/new_project" component={Auth(NewProject, true)} exact/>
             <Route path="/edit_schematic" component={Auth(EditProject2, true)} exact/>
+            <Route path="/ide" component={Auth(IDE, true)} exact/>
         </Switch>
     </div>
   );

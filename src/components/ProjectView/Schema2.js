@@ -1,9 +1,9 @@
 import {ReactDiagram} from 'gojs-react';
 import * as go from 'gojs';
-import '../libs/gojs/GoJS/Figures';
-import '../libs/gojs/GoJS/Templates';
-import {Inspector} from '../libs/gojs/GoJS/DataInspector';
-import '../libs/gojs/GoJS/DataInspector.css'
+import '../../libs/gojs/GoJS/Figures';
+import '../../libs/gojs/GoJS/Templates';
+import {Inspector} from '../../libs/gojs/GoJS/DataInspector';
+import '../../libs/gojs/GoJS/DataInspector.css'
 
 import React, {useEffect, useState} from 'react';
 import {AppBar, Backdrop, Button, CircularProgress, IconButton, makeStyles, Modal, Toolbar} from '@material-ui/core';
@@ -12,10 +12,7 @@ import Tab from '@material-ui/core/Tab';
 import ArrowBackIosIcon from '@material-ui/icons/ArrowBackIos';
 import MoreHorizIcon from '@material-ui/icons/MoreHoriz';
 
-import ChannelConfigurationModal from '../components/EditProject/ChannelConfigurationModal';
-import ModeConfigurationModal from '../components/EditProject/ModeConfigurationModal';
-import FusionConfigurationModal from '../components/EditProject/FusionConfigurationModal';
-import { request } from '../utils/axios';
+import { request } from '../../utils/axios';
 
 let myDiagram, palette, myDiagram_buildUnit_selectionPane, myOverview;
 let externalDroppedObjectName = "NONE";
@@ -56,9 +53,8 @@ let portType_atFusionOperator;
 
 const useStyles = makeStyles((theme) => ({
     root: {
-        width: 'calc(100vw - 1px)',
-        height: 'calc(100vh - 20px)',
-        overflow: 'hidden',
+        width: '100%',
+        height: '100%',
     },
     backdrop: {
         zIndex: theme.zIndex.drawer + 1,
@@ -77,7 +73,7 @@ const useStyles = makeStyles((theme) => ({
         flexDirection: 'row',
     },
     diagram: {
-        width: 'calc(100% - 210px)',
+        width: '100%',
         height: '645px',
     },
     palette: {
@@ -178,8 +174,9 @@ const useStyles = makeStyles((theme) => ({
     }
 }));
 
-const EditProject2 = (props) => {
+const Schema2 = (props) => {
     const classes = useStyles();
+    const {schemaData} = props
     const [originModelData, setOriginModelData] = useState(null);
     const [prevNodeDataArray, setPrevNodeDataArray] = useState([]);
     const [nodeDataArray, setNodeDataArray] = useState([]);
@@ -200,9 +197,9 @@ const EditProject2 = (props) => {
     const [curSelectedFactory, setCurSelectedFactory] = useState(null);
     const [curMode, setCurMode] = useState(null);
     useEffect(() => {
-        if(isReadySplash)
-            request_load(props.location.state.project_id)
-    }, [isReadySplash])
+        if(schemaData)
+            request_load()
+    }, [schemaData])
     useEffect(() => {
         if(curFactory) {
             const cur_factory_node = globalNodeDataArray.find((node) => node.key == curFactory)
@@ -603,53 +600,48 @@ const EditProject2 = (props) => {
             props.history.goBack();
         }
     }
-    const request_load = async (id) => {
-        // setOriginModelData(JSON.parse(JSON.stringify(test_data)))
+    const request_load = (id) => {
+          
 
-        const response = await request('get', '/project/schema/'+id+'/')
-        console.log(response.status)
-        if(response.status === 200) {
-            const schemaData = response.data.schema
-
-            const parsedString = JSON.parse(schemaData)
-            setOriginModelData(parsedString)
-            const sources = parsedString.nodeDataArray.filter((node) => {
-                return node.category == "sourceComponent"
-            })
-            const sinks = parsedString.nodeDataArray.filter((node) => {
-                return node.category == "sinkComponent"
-            })
-            const ports = parsedString.nodeDataArray.filter((node) => {
-                return node.category == "streamPort" && (sources.find((source) => source.key == node.group) || sinks.find((sink) => sink.key == node.group))
-            })
-            const root_factories = parsedString.nodeDataArray.filter((node) => {
-                return (node.category == "factory" && !node.group)
-            })
-            const mode_ports = parsedString.nodeDataArray.filter((node) => {
-                return (node.category == "modeChangeInputPort" && (root_factories.find((factory) => factory.key == node.group)))
-            })
-            const node_data_array = [
-                ...sources,
-                ...sinks,
-                ...ports,
-                ...root_factories,
-                ...mode_ports,
-            ]
-            const link_data_array = parsedString.linkDataArray.filter((link) => {
-                return ports.find((port) => port.key == link.to || port.key == link.from)
-            })
-            globalNodeDataArray = parsedString.nodeDataArray;
-            globalLinkDataArray = parsedString.linkDataArray;
-            setNodeDataArray(JSON.parse(JSON.stringify(parsedString.nodeDataArray)));
-            setLinkDataArray(JSON.parse(JSON.stringify(parsedString.linkDataArray)));
-            setVisibleNodeDataArray(node_data_array);
-            setVisibleLinkDataArray(link_data_array);
-            // myDiagram.animationManager.isEnabled = true;
-            // myDiagram.animationManager.duration = 1000;
-            // myDiagram.model.nodeDataArray = node_data_array;
-            // myDiagram.model.linkDataArray = link_data_array;
-            myDiagram.commandHandler.zoomToFit();
-        }
+          console.log(schemaData)
+          const parsedString = JSON.parse(schemaData)
+          setOriginModelData(parsedString)
+          const sources = parsedString.nodeDataArray.filter((node) => {
+              return node.category == "sourceComponent"
+          })
+          const sinks = parsedString.nodeDataArray.filter((node) => {
+              return node.category == "sinkComponent"
+          })
+          const ports = parsedString.nodeDataArray.filter((node) => {
+              return node.category == "streamPort" && (sources.find((source) => source.key == node.group) || sinks.find((sink) => sink.key == node.group))
+          })
+          const root_factories = parsedString.nodeDataArray.filter((node) => {
+              return (node.category == "factory" && !node.group)
+          })
+          const mode_ports = parsedString.nodeDataArray.filter((node) => {
+              return (node.category == "modeChangeInputPort" && (root_factories.find((factory) => factory.key == node.group)))
+          })
+          const node_data_array = [
+              ...sources,
+              ...sinks,
+              ...ports,
+              ...root_factories,
+              ...mode_ports,
+          ]
+          const link_data_array = parsedString.linkDataArray.filter((link) => {
+              return ports.find((port) => port.key == link.to || port.key == link.from)
+          })
+          globalNodeDataArray = parsedString.nodeDataArray;
+          globalLinkDataArray = parsedString.linkDataArray;
+          setNodeDataArray(JSON.parse(JSON.stringify(parsedString.nodeDataArray)));
+          setLinkDataArray(JSON.parse(JSON.stringify(parsedString.linkDataArray)));
+          setVisibleNodeDataArray(node_data_array);
+          setVisibleLinkDataArray(link_data_array);
+          // myDiagram.animationManager.isEnabled = true;
+          // myDiagram.animationManager.duration = 1000;
+          // myDiagram.model.nodeDataArray = node_data_array;
+          // myDiagram.model.linkDataArray = link_data_array;
+          myDiagram.commandHandler.zoomToFit();
     }
     const navigate_prev = () => {
         const node = nodeDataArray.find((item) => item.key == curFactory)
@@ -779,10 +771,7 @@ const EditProject2 = (props) => {
                             internalSelectedObjectName = "NONE";
                             setDefaultProperty(part);
                             addDefaultPort(part);
-                            inspector.inspectObject();
-                            inspector2.inspectObject();
                             updateCurrentObject(part);
-                            palette.clearSelection();
                             // myDiagram.commandHandler.zoomToFit()
                             //console.log("BuildUnit is null string? "+ (part.data.BuildUnit === null) ? "true" : "false");
                         });
@@ -798,8 +787,6 @@ const EditProject2 = (props) => {
                         console.log("key:"+part.key);
                     });
     
-                    inspector.inspectObject();
-                    inspector2.inspectObject();
                     },
                 SelectionDeleted: function(e) {
                     console.log("SelectionDeleted()");
@@ -845,8 +832,6 @@ const EditProject2 = (props) => {
                     {
                         setDefaultProperty(part);
                         addDefaultPort(part);
-                        inspector.inspectObject();
-                        inspector2.inspectObject();
                         updateCurrentObject(part);
                     });
     
@@ -862,8 +847,6 @@ const EditProject2 = (props) => {
                     updateCurrentObject(selected);
                     //relocatePort(selected);              
     
-                    inspector.inspectObject();
-                    inspector2.inspectObject();
                 },
     
                 ObjectContextClicked: function(e) {
@@ -879,8 +862,6 @@ const EditProject2 = (props) => {
                     //setDefaultProperty(selected);
                     updateCurrentObject(selected);
                     //relocatePort(selected);
-                    inspector.inspectObject();
-                    inspector2.inspectObject();   
                 },
                 ObjectDoubleClicked: function(e) {
                     console.log("ObjectDoubleClicked()");
@@ -921,8 +902,6 @@ const EditProject2 = (props) => {
                     deactivateAllStreamPort(e.diagram);
                     deactivateAllEventPort(e.diagram);
     
-                    inspector.inspectObject();
-                    inspector2.inspectObject();
                 },
                 model: $(go.GraphLinksModel,
                     {
@@ -1022,7 +1001,6 @@ const EditProject2 = (props) => {
             new go.Binding("name", "port_type").makeTwoWay(),
                 { doubleClick: function(e, obj) {
                     e.diagram.startTransaction("Toggle Input");
-                    toggleAllStreamPort(e.diagram, obj);
                     e.diagram.commitTransaction("Toggle Input");
                     }
                 }
@@ -1091,7 +1069,6 @@ const EditProject2 = (props) => {
             new go.Binding("name", "port_type").makeTwoWay(),
             { doubleClick: function(e, obj) {
                 e.diagram.startTransaction("Toggle Input");
-                toggleAllModeChangePort(e.diagram, obj);
                 e.diagram.commitTransaction("Toggle Input");
               }
             }
@@ -1117,7 +1094,6 @@ const EditProject2 = (props) => {
             new go.Binding("name", "port_type").makeTwoWay(),
             { doubleClick: function(e, obj) {
                 e.diagram.startTransaction("Toggle Output");
-                toggleAllModeChangePort(e.diagram, obj);
                 e.diagram.commitTransaction("Toggle Output");
               }
             }
@@ -2151,563 +2127,6 @@ const EditProject2 = (props) => {
               { "Border.figure": "RoundedRectangle" },
               $(go.TextBlock, { margin: 2 },
                 new go.Binding("text", "", function(d) { return d.category; })));
-        const inspector = new Inspector('splashInspectorDiv', myDiagram,
-            {
-        
-                // uncomment this line to only inspect the named properties below instead of all properties on each object:
-                includesOwnProperties: false,
-                multipleSelection: true,
-                propertyModified: function(prop, new_value, inspector) {
-                    let node = inspector.inspectedObject; 
-                    console.log('propertyModefied')
-                },
-                properties: {
-                    
-                    // "DataType": {readOnly: isChannel, show: hasDataType},
-                    "key": { readOnly: true },
-                    "Channel": {show: isStreamOutputPort, type: "string", readOnly: true },
-                    "MessageType": {show: isStreamOutputPort, type: "string", readOnly: true },
-                    "Event": {show: isEventOutputPort, type: "string", readOnly: true},
-                    "Freshness": {show: hasFreshness, type: "number"},
-                    "Rate": {show: hasRate, type: "number", readOnly: true},
-                    "UUID": {show: false} 
-                }
-            });
-        const inspector2 = new Inspector('splashInspectorDiv2', myDiagram,
-            {
-                // uncomment this line to only inspect the named properties below instead of all properties on each object:
-                includesOwnProperties: false,
-                propertyModified: function(prop, new_value, inspector) {
-                let node = inspector.inspectedObject; 
-        
-                let shape = node.findObject("SHAPE");
-                //shape.fill = node.data.color;
-                },
-                properties: {
-                "category": {readOnly: true},            
-                "port_type": {readOnly: true,  show: isStreamPort },
-                "group": { readOnly: true, show: false },
-                "isGroup": { show: false },
-        
-                "loc": { show: false },
-                "WIDTH": { show: false },
-                "HEIGHT": { show: false } ,
-        
-                "to": { readOnly: true, show: Inspector.showIfPresent},
-                "from": { readOnly: true, show: Inspector.showIfPresent},
-                "segArray" : { show: Inspector.showIfLink },
-                }
-            });    
-        palette = $(go.Palette, "palette", 
-            {
-                "ChangedSelection": function(e) {
-                    myDiagram.clearSelection();
-                },
-            });
-            let paletteTemplate_streamPort = 
-            $(go.Node, "Spot",
-                new go.Binding("isShadowed", "isSelected").ofObject(),
-                {
-                selectionAdorned: false,
-                shadowOffset: new go.Point(0, 0),
-                shadowBlur: 15,
-                shadowColor: "blue",
-                resizable: true,
-                resizeObjectName: "SHAPE",
-                toolTip: sharedToolTip,
-                },
-                { name: "PALETTE_STREAM_PORT", locationSpot: go.Spot.Center },
-                $(go.Shape, "RoundedRectangle",
-                { fill: $(go.Brush, "Linear", { 0.0: "white", 1.0: "gray" }),
-                    width: 180, height: 55, stroke: "black", strokeWidth: 1,
-                    parameter1: 5,
-                    alignment: new go.Spot(0.5, 0.5)
-                }),              
-                $(go.Shape, "Rectangle",
-                { fill: "white", width:20, height:20, alignment: new go.Spot(0.25, 0.5) }),
-                $(go.Shape, "TriangleRight", 
-                { fill: "black", width: 10, height: 10, alignment: new go.Spot(0.25, 0.5) }),
-                $(go.TextBlock, "Stream Port", 
-                { 
-                    name: "TEXT_NAME",
-                    textAlign: "center",
-                    alignment: new go.Spot(0.7, 0.5) 
-                }),            
-            );                        
-        
-    
-        myDiagram_buildUnit_selectionPane = $(go.Diagram, "selectionPane",
-            {
-                "undoManager.isEnabled": true,            
-                initialContentAlignment: go.Spot.Top,
-                allowSelect: true,
-                allowMove: false,
-                allowCopy: false,
-                allowDelete: false,
-                allowHorizontalScroll: false, 
-                scrollsPageOnFocus: true,
-                contentAlignment: go.Spot.TopLeft,
-                "panningTool.isEnabled": false,
-                layout:
-                    $(go.TreeLayout,
-                    {
-                        alignment: go.TreeLayout.AlignmentStart,
-                        angle: 0,
-                        compaction: go.TreeLayout.CompactionNone,
-                        layerSpacing: 16,
-                        layerSpacingParentOverlap: 1,
-                        nodeIndent: 2,
-                        nodeIndentPastParent: 0.88,
-                        nodeSpacing: 0,
-                        setsPortSpot: false,
-                        setsChildPortSpot: false
-                    }),
-                "ViewportBoundsChanged": function(e) {
-                    //let allowScroll = !e.diagram.viewportBounds.containsRect(e.diagram.documentBounds);
-                    // myDiagram_buildUnit_selectionPane.allowVerticalScroll = allowScroll;
-        
-                },
-            });
-        const paletteTemplate_eventInputPort = 
-            $(go.Node, "Spot",
-              new go.Binding("isShadowed", "isSelected").ofObject(),
-              {
-                selectionAdorned: false,
-                shadowOffset: new go.Point(0, 0),
-                shadowBlur: 15,
-                shadowColor: "blue",
-                resizable: true,
-                resizeObjectName: "SHAPE",
-                toolTip: sharedToolTip
-              },
-              { name: "PALETTE_EVENT_INPUT_PORT", locationSpot: go.Spot.Center  },
-              $(go.Shape, "RoundedRectangle",
-                { fill: $(go.Brush, "Linear", { 0.0: "white", 1.0: "gray" }),
-                  width: 180, height: 55, stroke: "black", strokeWidth: 1,
-                  parameter1: 5,
-                  alignment: new go.Spot(0.5, 0.5)
-                }),              
-              $(go.Shape, "Rectangle",
-                { fill: "white", width:20, height:20, alignment: new go.Spot(0.25, 0.5) }),
-              $(go.Shape, "ISOProcess", 
-                { fill: "black", width: 16, height: 13, stroke: "white", angle:90, alignment: new go.Spot(0.25, 0.5) }),
-              $(go.TextBlock, "Event\nInputPort", 
-                { 
-                  name: "TEXT_NAME",
-                  textAlign: "center",
-                  alignment: new go.Spot(0.7, 0.5) }),            
-            );     
-    
-        const paletteTemplate_eventOutputPort = 
-            $(go.Node, "Spot",
-              new go.Binding("isShadowed", "isSelected").ofObject(),
-              {
-                selectionAdorned: false,
-                shadowOffset: new go.Point(0, 0),
-                shadowBlur: 15,
-                shadowColor: "blue",
-                resizable: true,
-                resizeObjectName: "SHAPE",
-                toolTip: sharedToolTip
-              },
-              { name: "PALETTE_EVENT_OUTPUT_PORT", locationSpot: go.Spot.Center },
-              $(go.Shape, "RoundedRectangle",
-                { fill: $(go.Brush, "Linear", { 0.0: "white", 1.0: "gray" }),
-                  width: 180, height: 55, stroke: "black", strokeWidth: 1,
-                  parameter1: 5,
-                  alignment: new go.Spot(0.5, 0.5)
-                }),              
-              $(go.Shape, "Rectangle",
-                { fill: "white", width:20, height:20, alignment: new go.Spot(0.25, 0.5) }),
-              $(go.Shape, "ISOProcess", 
-                { fill: "black", width: 16, height: 13, angle: 270, stroke: "white", alignment: new go.Spot(0.25, 0.5) }),
-              $(go.TextBlock, "Event\nOutputPort", 
-                { 
-                  name: "TEXT_NAME",
-                  textAlign: "center",                    
-                  alignment: new go.Spot(0.7, 0.5) }),            
-            );  
-            
-        const paletteTemplate_modeChangeInputPort = 
-            $(go.Node, "Spot",
-              new go.Binding("isShadowed", "isSelected").ofObject(),
-              {
-                selectionAdorned: false,
-                shadowOffset: new go.Point(0, 0),
-                shadowBlur: 15,
-                shadowColor: "blue",
-                resizeObjectName: "SHAPE",
-                toolTip: sharedToolTip,
-              },
-              { name: "PALETTE_MODE_CHANGE_INPUT_PORT", locationSpot: go.Spot.Center },
-              $(go.Shape, "RoundedRectangle",
-                { fill: $(go.Brush, "Linear", { 0.0: "white", 1.0: "gray" }),
-                  width: 180, height: 55, stroke: "black", strokeWidth: 1,
-                  parameter1: 5,
-                  alignment: new go.Spot(0.5, 0.5),
-                }),              
-              $(go.Shape, "Rectangle",
-                { fill: "white", width:20, height:20, alignment: new go.Spot(0.25, 0.5) }),
-              $(go.Shape, "Circle", 
-                { fill: "black", width: 4, height: 4, stroke: null, alignment: new go.Spot(0.25, 0.5-0.091+0.023+0.138) }),
-              $(go.Shape, "Circle", 
-                { fill: "black", width: 4, height: 4, stroke: null, alignment: new go.Spot(0.25-0.024, 0.5+0.046+0.023-0.138) }),
-              $(go.Shape, "Circle", 
-                { fill: "black", width: 4, height: 4, stroke: null, alignment: new go.Spot(0.25+0.024, 0.5+0.046+0.023-0.138) }),
-              $(go.TextBlock, "ModeChange\nInputPort", 
-                { 
-                  name: "TEXT_NAME",
-                  textAlign: "center",                    
-                  //isStrikethrough: true, // disabled palette
-                  alignment: new go.Spot(0.7, 0.5) }),            
-            );                   
-    
-        const paletteTemplate_modeChangeOutputPort = 
-            $(go.Node, "Spot",
-              new go.Binding("isShadowed", "isSelected").ofObject(),
-              {
-                selectionAdorned: false,
-                shadowOffset: new go.Point(0, 0),
-                shadowBlur: 15,
-                shadowColor: "blue",
-                resizable: true,
-                resizeObjectName: "SHAPE",
-                toolTip: sharedToolTip,
-              },
-              { name: "PALETTE_MODE_CHANGE_OUTPUT_PORT", locationSpot: go.Spot.Center },
-              $(go.Shape, "RoundedRectangle",
-                { fill: $(go.Brush, "Linear", { 0.0: "white", 1.0: "gray" }),
-                  width: 180, height: 55, stroke: "black", strokeWidth: 1,
-                  parameter1: 5,
-                  alignment: new go.Spot(0.5, 0.5),
-                }),              
-              $(go.Shape, "Rectangle",
-                { fill: "white", width:20, height:20, alignment: new go.Spot(0.25, 0.5) }),
-              $(go.Shape, "Circle", 
-                { fill: "black", width: 4, height: 4, stroke: null, alignment: new go.Spot(0.25, 0.5-0.091+0.023) }),
-              $(go.Shape, "Circle", 
-                { fill: "black", width: 4, height: 4, stroke: null, alignment: new go.Spot(0.25-0.024, 0.5+0.046+0.023) }),
-              $(go.Shape, "Circle", 
-                { fill: "black", width: 4, height: 4, stroke: null, alignment: new go.Spot(0.25+0.024, 0.5+0.046+0.023) }),
-              $(go.TextBlock, "ModeChange\nOutputPort", 
-                { 
-                  name: "TEXT_NAME",
-                  textAlign: "center",
-                  //isStrikethrough: true, // disabled palette
-                  alignment: new go.Spot(0.7, 0.5) }),            
-            ); 
-    
-        const paletteTemplate_processingComponent =
-                $(go.Group, "Spot",
-                { name: "PALETTE_PROCESSING_COMPONENT", locationSpot: go.Spot.Center },
-                new go.Binding("isShadowed", "isSelected").ofObject(),
-                {
-                    selectionAdorned: false,
-                    shadowOffset: new go.Point(0, 0),
-                    shadowBlur: 15,
-                    shadowColor: "blue",
-                    resizable: true,
-                    resizeObjectName: "SHAPE",
-                    toolTip: sharedToolTip
-                },                
-                $(go.Shape, "RoundedRectangle",
-                    { fill: $(go.Brush, "Linear", { 0.0: "white", 1.0: "gray" }),
-                    width: 180, height: 55, stroke: "black", strokeWidth: 1,
-                    parameter1: 5,
-                    alignment: new go.Spot(0.5, 0.5)
-                    }),              
-                $(go.Shape, "Rectangle",
-                    { fill: "white", width:40, height:40, alignment: new go.Spot(0.25, 0.5) }),
-                $(go.TextBlock, "Processing\nComponent", 
-                    { textAlign: "center",
-                    alignment: new go.Spot(0.7, 0.5) }),              
-            );         
-    
-        const paletteTemplate_sourceComponent = 
-            $(go.Node, "Spot",
-              { name: "PALETTE_SOURCE_COMPONENT", locationSpot: go.Spot.Center },
-              new go.Binding("isShadowed", "isSelected").ofObject(),
-              {
-                selectionAdorned: false,
-                shadowOffset: new go.Point(0, 0),
-                shadowBlur: 15,
-                shadowColor: "blue",
-                resizable: true,
-                resizeObjectName: "SHAPE",
-                toolTip: sharedToolTip
-              },                
-              $(go.Shape, "RoundedRectangle",
-                { fill: $(go.Brush, "Linear", { 0.0: "white", 1.0: "gray" }),
-                  width: 180, height: 50, stroke: "black", strokeWidth: 1,
-                  parameter1: 5,
-                  alignment: new go.Spot(0.5, 0.5)
-                }),       
-              $(go.Shape, "Rectangle",
-                { fill: "white", width:64, height:32, alignment: new go.Spot(0.25, 0.5) }),                  
-              $(go.Shape, "Rectangle",
-                { fill: "white", width:16, height:16, alignment: new go.Spot(0.428, 0.5) }),
-              $(go.Shape, "TriangleRight", 
-                { fill: "black", width:8, height:8, alignment: new go.Spot(0.428, 0.5) }),
-              $(go.TextBlock, "Source\nComponent", 
-                { textAlign: "center",
-                  alignment: new go.Spot(0.7, 0.5) }),      
-            );         
-      
-        const paletteTemplate_sinkComponent =
-            $(go.Node, "Spot",
-              { name: "SINK_COMPONENT", locationSpot: go.Spot.Center },
-              new go.Binding("isShadowed", "isSelected").ofObject(),
-              {
-                selectionAdorned: false,
-                shadowOffset: new go.Point(0, 0),
-                shadowBlur: 15,
-                shadowColor: "blue",
-                resizable: true,
-                resizeObjectName: "SHAPE",
-                toolTip: sharedToolTip
-              },                
-              $(go.Shape, "RoundedRectangle",
-                { fill: $(go.Brush, "Linear", { 0.0: "white", 1.0: "gray" }),
-                  width: 180, height: 55, stroke: "black", strokeWidth: 1,
-                  parameter1: 5,
-                  alignment: new go.Spot(0.5, 0.5)
-                }),       
-              $(go.Shape, "Rectangle",
-                { fill: "white", width:64, height:32, alignment: new go.Spot(0.284, 0.5) }),                  
-              $(go.Shape, "Rectangle",
-                { fill: "white", width:16, height:16, alignment: new go.Spot(0.106, 0.5) }),
-              $(go.Shape, "TriangleRight", 
-                { fill: "black", width: 8, height: 8, alignment: new go.Spot(0.106, 0.5) }),
-              $(go.TextBlock, "Sink\nComponent", 
-                { textAlign: "center",
-                  alignment: new go.Spot(0.7, 0.5) }), 
-            ); 
-      
-        const paletteTemplate_fusionOperator =
-            $(go.Group, "Spot",
-              { name: "PALETTE_FUSION_COMPONENT", locationSpot: go.Spot.Center },
-              new go.Binding("isShadowed", "isSelected").ofObject(),
-              {
-                selectionAdorned: false,
-                shadowOffset: new go.Point(0, 0),
-                shadowBlur: 15,
-                shadowColor: "blue",
-                resizable: true,
-                resizeObjectName: "SHAPE",
-                toolTip: sharedToolTip
-              },                
-              $(go.Shape, "RoundedRectangle",
-                { fill: $(go.Brush, "Linear", { 0.0: "white", 1.0: "gray" }),
-                  width: 180, height: 55, stroke: "black", strokeWidth: 1,
-                  parameter1: 5,
-                  alignment: new go.Spot(0.5, 0.5)
-                }),              
-              $(go.Shape, "Trapezoid",
-                { fill: "white", width:40, height:25, angle: 90, alignment: new go.Spot(0.25, 0.5) }),
-              $(go.TextBlock, "Fusion\nComponent", 
-                { textAlign: "center",
-                  alignment: new go.Spot(0.7, 0.5) }),              
-            );
-      
-        const paletteTemplate_factory =
-            $(go.Group, "Spot",
-              { name: "PALETTE_FACTORY", locationSpot: go.Spot.Center },
-              new go.Binding("isShadowed", "isSelected").ofObject(),
-              {
-                selectionAdorned: false,
-                shadowOffset: new go.Point(0, 0),
-                shadowBlur: 15,
-                shadowColor: "blue",
-                resizable: true,
-                resizeObjectName: "SHAPE",
-                toolTip: sharedToolTip
-              },
-              $(go.Shape, "RoundedRectangle",
-                { fill: $(go.Brush, "Linear", { 0.0: "white", 1.0: "gray" }),
-                  width: 180, height: 55, stroke: "black", strokeWidth: 1,
-                  parameter1: 5,
-                  alignment: new go.Spot(0.5, 0.5)
-                }),              
-              $(go.Shape, "RoundedRectangle",
-                { fill: "white", width:80, height:40, parameter1: 10, alignment: new go.Spot(0.3, 0.5) }),
-              $(go.TextBlock, "Factory", 
-                { textAlign: "center",
-                  alignment: new go.Spot(0.7, 0.5) }),              
-            );  
-    
-        // share the template map with the Palette
-        palette.nodeTemplateMap.add("streamPort", paletteTemplate_streamPort);  
-        palette.nodeTemplateMap.add("eventInputPort", paletteTemplate_eventInputPort);  
-        palette.nodeTemplateMap.add("eventOutputPort", paletteTemplate_eventOutputPort);  
-        palette.nodeTemplateMap.add("modeChangeInputPort", paletteTemplate_modeChangeInputPort); 
-        palette.nodeTemplateMap.add("modeChangeOutputPort", paletteTemplate_modeChangeOutputPort); 
-        palette.groupTemplateMap.add("processingComponent", paletteTemplate_processingComponent);  
-        palette.groupTemplateMap.add("sourceComponent", paletteTemplate_sourceComponent);   
-        palette.groupTemplateMap.add("sinkComponent", paletteTemplate_sinkComponent);   
-        palette.groupTemplateMap.add("fusionOperator", paletteTemplate_fusionOperator); 
-        palette.groupTemplateMap.add("factory", paletteTemplate_factory);
-    
-        palette.layout = $(go.GridLayout, { alignment: go.GridLayout.Location, spacing: new go.Size(5,8)});
-    
-        palette.model.makeUniqueKeyFunction = setKeyUUID;
-        palette.maxSelectionCount = 1;
-    
-        palette.model.nodeDataArray = [
-            { category: "streamPort" },
-            { category: "eventInputPort" },
-            { category: "eventOutputPort" },
-            { category: "modeChangeInputPort" },
-            { category: "modeChangeOutputPort" },
-            { category: "processingComponent", "isGroup": true },  
-            { category: "sourceComponent", "isGroup": true},
-            { category: "sinkComponent", "isGroup": true },
-            { category: "fusionOperator", "isGroup": true },
-            { category: "factory", "isGroup": true },
-        ];
-        // the Overview
-        myOverview =
-          $(go.Overview, "overviewDiv",
-            { observed: myDiagram, maxScale: 0.1 });
-            // change color of viewport border in Overview
-        myOverview.box.elt(0).stroke = "dodgerblue";
-        myDiagram_buildUnit_selectionPane.model.makeUniqueKeyFunction = setKeyUUID;
-        
-        //myDiagram_buildUnit.isEnabled = false;
-        //myDiagram_buildUnit.model = myDiagram.model;
-        myDiagram_buildUnit_selectionPane.nodeTemplate =
-            $(go.Node,
-                // no Adornment: instead change panel background color by binding to Node.isSelected
-                { 
-                selectionAdorned: false, 
-                contextMenu:     // define a context menu for each node
-                    $("ContextMenu",  // that has one button
-                        $("ContextMenuButton",
-                        $(go.TextBlock, {margin: 5, width: 150}, "Set Build Unit"),
-                        { 
-                            click: setBuildUnit_contextMenu_in_selectionPane,
-                        },
-                        new go.Binding("visible", "", 
-                            function(o) {
-                                let data = myDiagram.model.findNodeDataForKey(o.key);
-                                return data.category !== "buildUnit" && ( data.buildUnit === "" || data.buildUnit === undefined)
-                            }
-                        )
-                        ),
-                        $("ContextMenuButton",
-                        $(go.TextBlock, {margin: 5, width: 150}, "Unset Build Unit"),
-                        { 
-                            click: unsetBuildUnit_contextMenu_in_selectionPane,
-                        },
-                        new go.Binding("visible", "", 
-                            function(o) {
-                                let data = myDiagram.model.findNodeDataForKey(o.key);
-                                return data.category === "buildUnit"
-                            }
-                        )
-                        )
-                    ),
-                },
-                $("TreeExpanderButton",
-                {
-                    width: 14,
-                    "ButtonBorder.fill": "whitesmoke",
-                    "ButtonBorder.stroke": null,
-                    "_buttonFillOver": "rgba(0,128,255,0.25)",
-                    "_buttonStrokeOver": null
-                }),
-                $(go.Panel, "Horizontal",
-                { position: new go.Point(16, 0) },
-                new go.Binding("background", "isSelected", function (s) { return (s ? "lightblue" : "#E6E6E6"); }).ofObject(),
-                $(go.TextBlock,
-                    new go.Binding("text", "key"))
-                )  // end Horizontal Panel
-            );  // end Node
-        myDiagram_buildUnit_selectionPane.linkTemplate = $(go.Link);
-        myDiagram_buildUnit_selectionPane.model = $(go.TreeModel, { nodeParentKeyProperty: "buildUnit" });
-        myDiagram_buildUnit_selectionPane.model.undoManager = myDiagram.model.undoManager;
-        let myChangingModel = false;
-        myDiagram.addModelChangedListener(function(e) {
-            // if (e.isTransactionFinished) enableAll();
-            if (e.model.skipsUndoManager) return;
-            if (myChangingModel) return;
-            myChangingModel = true;
-            // don't need to start/commit a transaction because the UndoManager is shared with myDiagram_buildUnit_selectionPane
-            if (e.modelChange === "nodeGroupKey" || e.modelChange === "nodeParentKey") {
-                // handle structural change: group memberships
-                let treenode = myDiagram_buildUnit_selectionPane.findNodeForData(e.object);
-                if (treenode !== null) treenode.updateRelationshipsFromData();
-            } 
-            else if (e.change === go.ChangedEvent.Property) {
-                let treenode = myDiagram_buildUnit_selectionPane.findNodeForData(e.object);
-                if (treenode !== null) treenode.updateTargetBindings();
-                try {
-                    let newNode = globalNodeDataArray.find((node) => node.key === e.object.key);
-                    newNode[e.propertyName] = e.newValue;
-                } catch(err) {
-                    
-                }
-
-            } 
-            else if (e.change === go.ChangedEvent.Insert && e.propertyName === "nodeDataArray") {
-                // pretend the new data isn't already in the nodeDataArray for myDiagram_buildUnit_selectionPane
-                myDiagram_buildUnit_selectionPane.model.nodeDataArray.splice(e.newParam, 1);
-                // now add to the myDiagram_buildUnit_selectionPane model using the normal mechanisms
-                const newArray = globalNodeDataArray.concat(e.newValue)
-                setNodeDataArray(newArray)
-                globalNodeDataArray = newArray
-                if(e.newValue.category === 'buildUnit'||
-                    e.newValue.category === 'processingComponent' || 
-                    e.newValue.category === 'sourceComponent' || 
-                    e.newValue.category === 'sinkComponent' || 
-                    e.newValue.category === 'fusionOperator'
-                ) {
-                    myDiagram_buildUnit_selectionPane.model.addNodeData(e.newValue);
-                }
-            }
-            else if (e.change === go.ChangedEvent.Insert && e.propertyName === "linkDataArray") {
-                const newArray = globalLinkDataArray.concat(e.newValue)
-                setLinkDataArray(newArray)
-                globalLinkDataArray = newArray
-            } 
-            else if (e.change === go.ChangedEvent.Remove && e.propertyName === "nodeDataArray") {
-                // remove the corresponding node from myDiagram_buildUnit_selectionPane
-                let treenode = myDiagram_buildUnit_selectionPane.findNodeForData(e.oldValue);
-                if (treenode !== null) myDiagram_buildUnit_selectionPane.remove(treenode);
-                const newArray = globalNodeDataArray.filter(node => node.key !== e.oldValue.key);
-                globalNodeDataArray = newArray;
-            }
-            else if (e.change === go.ChangedEvent.Remove && e.propertyName === "linkDataArray") {
-                const newArray = globalLinkDataArray.filter(link => !(link.from === e.oldValue.from && link.to === e.oldValue.to));
-                globalNodeDataArray = newArray;
-            }
-            myChangingModel = false;
-            myDiagram_buildUnit_selectionPane.requestUpdate();
-        });
-        myDiagram_buildUnit_selectionPane.addModelChangedListener(function(e) {
-            if (e.model.skipsUndoManager) return;
-            if (myChangingModel) return;
-            myChangingModel = true;
-            // don't need to start/commit a transaction because the UndoManager is shared with myDiagram
-            if (e.modelChange === "nodeGroupKey" || e.modelChange === "nodeParentKey") {
-                // handle structural change: tree parent/children
-                let node = myDiagram.findNodeForData(e.object);
-                if (node !== null) node.updateRelationshipsFromData();
-            } else if (e.change === go.ChangedEvent.Property) {
-                // propagate simple data property changes back to the main Diagram
-                let node = myDiagram.findNodeForData(e.object);
-                if (node !== null) node.updateTargetBindings();
-            } else if (e.change === go.ChangedEvent.Insert && e.propertyName === "nodeDataArray") {
-                // pretend the new data isn't already in the nodeDataArray for the main Diagram model
-                myDiagram.model.nodeDataArray.splice(e.newParam, 1);
-                // now add to the myDiagram model using the normal mechanisms
-                myDiagram.model.addNodeData(e.newValue);
-            } else if (e.change === go.ChangedEvent.Remove && e.propertyName === "nodeDataArray") {
-                // remove the corresponding node from the main Diagram
-                let node = myDiagram.findNodeForData(e.oldValue);
-                if (node !== null) myDiagram.remove(node);
-            }
-            myChangingModel = false;
-        });
         setIsReadySplash(true);
         setCurSelectedFactory("");
         curFactory = "";
@@ -2751,53 +2170,6 @@ const EditProject2 = (props) => {
         <div className={classes.root}>
             <div id="programName" style={{display:'none'}}>RTOS Splash Schematic Editor</div>
             <div id="currentFile" style={{display:'none'}}>(NEW_FILENAME)</div>
-            <Backdrop className={classes.backdrop} open={loading}>
-                <CircularProgress color="inherit" />
-            </Backdrop>
-            <AppBar position="static" className={classes.appBar}>
-                <Toolbar>
-                        <div className={classes.appBarLeft}>
-                            {curSelectedFactory ? 
-                            <div className={classes.horizontalDiv}>
-                                <IconButton
-                                    className={classes.button}
-                                    color="inherit"
-                                    onClick={navigate_prev}
-                                >
-                                    <ArrowBackIosIcon/>
-                                </IconButton>
-                                <div>
-                                    {curSelectedFactory}
-                                </div>
-                            </div>: null}
-                        </div>
-                    <div className={classes.logoWrapper}>
-                    <a href="/">
-                        <img 
-                        alt="logo"
-                        className={classes.logo}
-                        src="/images/splash_logo.png"/>
-                    </a>
-                    </div>
-                    <div className={classes.appBarRight}>
-                        <Button
-                            className={classes.button}
-                            onClick={request_cancel}
-                            color="inherit"
-                        >
-                            Cancel
-                        </Button>
-                        <Button
-                            className={classes.button}
-                            onClick={request_save}
-                            color="inherit"
-                        >
-                            Save
-                        </Button>
-                    </div>
-                </Toolbar>
-                
-            </AppBar>
             {nodeDataArray.length > 0 ? nodeDataArray.find((node) => node.key == curSelectedFactory) ? nodeDataArray.find((node) => node.key == curSelectedFactory).mode_configuration ? 
                 <AppBar>
                 
@@ -2821,62 +2193,21 @@ const EditProject2 = (props) => {
                 :
                 null : null : null
             }
-            <div className={classes.topDiv}>
-                <div className={classes.diagram}>
-                    <ReactDiagram
-                    initDiagram={initDiagram}
-                    divClassName="diagram"
-                    nodeDataArray={visibleNodeDataArray}
-                    linkDataArray={visibleLinkDataArray}
-                    onModelChange={handleModelChange}
-                    skipsDiagramUpdate={false}
-                    />
-                </div>
-                <div 
-                    id="palette"
-                    className={classes.palette}
-
+            <div className={classes.diagram}>
+                <ReactDiagram
+                initDiagram={initDiagram}
+                divClassName="diagram"
+                nodeDataArray={visibleNodeDataArray}
+                linkDataArray={visibleLinkDataArray}
+                onModelChange={handleModelChange}
+                skipsDiagramUpdate={false}
                 />
-                <Modal open={channelModalOpen} onClose={handleCloseChannelModal}>
-                    <ChannelConfigurationModal channel={channelConfigured} onConfirm={handleConfirmChannelModal}/>
-                </Modal>
-                <Modal open={modeModalOpen} onClose={handleCloseModeModal}>
-                    <ModeConfigurationModal factory={factoryConfigured} onConfirm={handleConfirmModeModal}/>
-                </Modal>
-                <Modal open={fusionModalOpen} onClose={handleCloseFusionModal}>
-                    <FusionConfigurationModal fusionOperator={fusionConfigured} onConfirm={handleConfirmFusionModal} selectInputPort={handleSelectInputPort} inputPorts={inputPortsForFusionOperator}/>
-                </Modal>
             </div>
-            <div className={classes.bottomDiv}>
-                <div className={classes.propertyWrapper}>
-                    <div className={classes.title}>
-                        Property
-                    </div>
-                    <div className={classes.propertyDiv}>
-                        <div id="splashInspectorDiv"/>
-                        <div id="splashInspectorDiv2"/>
-                    </div>
-                </div>
-                
-                <div className={classes.overviewWrapper}>
-                    <div className={classes.title}>
-                        Overview
-                    </div>
-                    <div id="overviewDiv" className={classes.overviewDiv}/>
-                </div>
-                <div className={classes.selectionPaneWrapper}>
-                    <div className={classes.title}>
-                        Build Unit
-                    </div>
-                    <div id="selectionPane" className={classes.selectionPaneDiv}/>
-                </div>
-            </div>
-            
         </div>
     );
 };
 
-export default EditProject2;
+export default Schema2;
 
 
 function CustomLayout() {
@@ -3207,7 +2538,7 @@ function splash_componentStyle() {
         new go.Binding("location", "loc", go.Point.parse).makeTwoWay(go.Point.stringify),
         new go.Binding("isShadowed", "isSelected").ofObject(),
         {
-            movable: true,
+            movable: false,
             selectionAdorned: false,
             shadowOffset: new go.Point(0, 0),
             shadowBlur: 15,

@@ -1,5 +1,10 @@
-import {Button, FormControl, InputLabel, makeStyles, MenuItem, Select, TextField} from '@material-ui/core';
+import {Button, FormControl, InputLabel, makeStyles, MenuItem, Select, TextField, Modal} from '@material-ui/core';
 import React, {useEffect, useState} from 'react';
+import CustomMessageModal from './CustomMessageModal';
+import message_pkgs from './message_pkgs';
+import { request } from '../../utils/axios';
+import EditIcon from '@material-ui/icons/Edit';
+import { isCompositeComponent } from 'react-dom/test-utils';
 
 const useStyles = makeStyles((theme) => ({
     root: {
@@ -14,7 +19,7 @@ const useStyles = makeStyles((theme) => ({
         alignItems: 'center',
         padding: '20px',
         justifyContent: 'space-between',
-        fontSize: '20px',
+        fontSize: '15px',
     },
     textField: {
     },
@@ -26,16 +31,27 @@ const useStyles = makeStyles((theme) => ({
 }))
 const pattern_channel = /[\{\}\[\]\/?.,;:|\)*~`!^\-+<>@\#$%&\\\=\(\'\"\s]/;
 const pattern_num = /^[0-9]*$/;
+
 const ChannelConfigurationModal = (props) => {
     const classes = useStyles()
     
     const [channel, setChannel] = useState('');
+    const [pkg, setPkg] = useState('std_msgs')
     const [type, setType] = useState('Bool');
     const [rate, setRate] = useState(0);
+    const [isNew, setIsNew] = useState(false)
+    const [customMessageIdSelected, setCustomMessageIdSelected] = useState(null)
+    const [customMessages, setCustomMessages] = useState([]);
+    const [customMessageData, setCustomMessageData] = useState([])
+    const [customMessageTitle, setCustomMessageTitle] = useState('')
+    const [customMessageModalOpen, setCustomMessageModalOpen] = useState(false);
     useEffect(() => {
         if(props.channel) {
             if(props.channel.Channel) {
                 setChannel(props.channel.Channel);
+            }
+            if(props.channel.MessagePkg) {
+                setPkg(props.channel.MessagePkg)
             }
             if(props.channel.MessageType) {
                 setType(props.channel.MessageType);
@@ -45,8 +61,80 @@ const ChannelConfigurationModal = (props) => {
             }
         }
     }, props)
-    const handleSelect = (e) => {
+    useEffect(() => {
+        if(pkg === 'custom_msgs') {
+            requestCustomMessages()
+        }
+    }, [pkg])
+    const requestCustomMessages = async () => {
+        try {
+            const response = await request('get', '/project/custom_message/list/')
+            if(response.status === 200) {
+                setCustomMessages(response.data)
+            }
+        } catch(err) { 
+            console.log(err)
+        }
+    }
+    const requestLoadCustomMessage = async (id) => {
+        try {
+            const response = await request('get', '/project/custom_message/' + id + '/')
+            if(response.status === 200) {
+                setCustomMessageData(response.data.fields)
+            }
+        } catch(err) { 
+            console.log(err)
+        }
+    }
+    const requestSaveCustomMessage = async () => {
+        try {
+            const response = await request('put', '/project/custom_message/' + customMessageIdSelected + '/', {name: customMessageTitle, fields:JSON.stringify(customMessageData)})
+            if(response.status === 200) {
+                setType(customMessageTitle)
+                requestCustomMessages()
+            }
+        } catch(err) { 
+            console.log(err)
+        }
+    }
+    const handleSelectPkg = (e) => {
+        setPkg(e.target.value)
+        setType(message_pkgs.find((item) => item.name === e.target.value).messages[0])
+    }
+    const handleSelectMsg = (e) => {
+        if(pkg === "custom_msgs" && e.target.value === "Add New Custom Message") {
+            setIsNew(true)
+            setCustomMessageModalOpen(true)
+            setCustomMessageData([])
+            setCustomMessageIdSelected(-1)
+            setCustomMessageTitle('')
+            return
+        }
+        else if(pkg === "custom_msgs") {
+            setIsNew(false)
+            const id = customMessages.find(item => item.name === e.target.value).id
+            const title = customMessages.find(item => item.name === e.target.value).name
+            setCustomMessageIdSelected(id)
+            requestLoadCustomMessage(id)
+            setCustomMessageTitle(title)
+        }
         setType(e.target.value)
+        
+    }
+    const handleCloseCustomMessageModal = () => {
+        setCustomMessageModalOpen(false)
+        setIsNew(false)
+    }
+    const handleConfirmCustomMessageModal = (data) => {
+        requestSaveCustomMessage()
+        setCustomMessageModalOpen(false)
+        setIsNew(false)
+    }
+    const handleDeleteCustomMessageModal = () => {
+        setCustomMessageModalOpen(false)
+        setCustomMessageData([])
+        setType('')
+        setIsNew(false)
     }
     return (
         <div className={classes.root}>
@@ -68,43 +156,30 @@ const ChannelConfigurationModal = (props) => {
             fullWidth
             />
             <FormControl required className={classes.formControl} fullWidth variant="outlined">
-                <InputLabel id="select-helper-label">Data type</InputLabel>
-                <Select value={type} defaultValue={"Bool"} className={classes.select} onChange={handleSelect} label="Data type" labelId="select-helper-label">
-                    <MenuItem value="Bool">Bool</MenuItem>
-                    <MenuItem value="Byte">Byte</MenuItem>
-                    <MenuItem value="ByteMultiArray">ByteMultiArray</MenuItem>
-                    <MenuItem value="Char">Char</MenuItem>
-                    <MenuItem value="ColorRGBA">ColorRGBA</MenuItem>
-                    <MenuItem value="Duration">Duration</MenuItem>
-                    <MenuItem value="Empty">Empty</MenuItem>
-                    <MenuItem value="Float32">Float32</MenuItem>
-                    <MenuItem value="Float32MultiArray">Float32MultiArray</MenuItem>
-                    <MenuItem value="Float64">Float64</MenuItem>
-                    <MenuItem value="Float64MultiArray">Float64MultiArray</MenuItem>
-                    <MenuItem value="Header">Header</MenuItem>
-                    <MenuItem value="Int16">Int16</MenuItem>
-                    <MenuItem value="Int16MultiArray">Int16MultiArray</MenuItem>
-                    <MenuItem value="Int32">Int32</MenuItem>
-                    <MenuItem value="Int32MultiArray">Int32MultiArray</MenuItem>
-                    <MenuItem value="Int64">Int64</MenuItem>
-                    <MenuItem value="Int64MultiArray">Int64MultiArray</MenuItem>
-                    <MenuItem value="Int8">Int8</MenuItem>
-                    <MenuItem value="Int8MultiArray">Int8MultiArray</MenuItem>
-                    <MenuItem value="MultiArrayDimension">MultiArrayDimension</MenuItem>
-                    <MenuItem value="MultiArrayLayout">MultiArrayLayout</MenuItem>
-                    <MenuItem value="String">String</MenuItem>
-                    <MenuItem value="Time">Time</MenuItem>
-                    <MenuItem value="UInt16">UInt16</MenuItem>
-                    <MenuItem value="UInt16MultiArray">UInt16MultiArray</MenuItem>
-                    <MenuItem value="UInt32">UInt32</MenuItem>
-                    <MenuItem value="UInt32MultiArray">UInt32MultiArray</MenuItem>
-                    <MenuItem value="UInt64">UInt64</MenuItem>
-                    <MenuItem value="UInt64MultiArray">UInt64MultiArray</MenuItem>
-                    <MenuItem value="UInt8">UInt8</MenuItem>
-                    <MenuItem value="UInt8MultiArray">UInt8MultiArray</MenuItem>
+                <InputLabel id="select-helper-label-package">Message Package</InputLabel>
+                <Select value={pkg} defaultValue={message_pkgs[0]} className={classes.select} onChange={handleSelectPkg} label="Message Package" labelId="select-helper-label-package">
+                    {message_pkgs.map((item, id) => <MenuItem key={id} value={item.name}>{item.name}</MenuItem>)}
                 </Select>
             </FormControl>
-            <TextField 
+            <FormControl required className={classes.formControl} fullWidth variant="outlined">
+                <InputLabel id="select-helper-label-messeage">Message</InputLabel>
+                {pkg ? <Select value={type} defaultValue={message_pkgs.find((item) => item.name === pkg).messages[0]} className={classes.select} onChange={handleSelectMsg} label="Message" labelId="select-helper-label-message">
+                    {message_pkgs.find((item) => item.name === pkg).messages
+                        .map((item, id) => 
+                        <MenuItem key={id} value={item}>
+                            {item}
+                        </MenuItem>)
+                    }
+                    {pkg === 'custom_msgs' ? 
+                    customMessages.map((item) => 
+                        <MenuItem key={item.id} value={item.name}>
+                            {item.name}
+                            {type === item.name ? <EditIcon style={{position: 'absolute', right: 30}} onClick={(e) => {setCustomMessageModalOpen(true)}}/> : null}
+                        </MenuItem>) 
+                        : null}
+                </Select> : null}
+            </FormControl>
+            <TextField  
             label="Rate"
             variant="outlined"
             className={classes.textField}
@@ -119,9 +194,12 @@ const ChannelConfigurationModal = (props) => {
                 }
             }}
             />
-            <Button variant="contained" color="primary" className={classes.button} onClick={() => props.onConfirm(channel, type, rate)} disabled={channel.length === 0 || !type}>
+            <Button variant="contained" color="primary" className={classes.button} onClick={() => props.onConfirm(channel, pkg, type, rate)} disabled={channel.length === 0 || !type}>
                 Confirm
             </Button>
+            <Modal open={customMessageModalOpen} onClose={handleCloseCustomMessageModal}>
+                <CustomMessageModal id={customMessageIdSelected} title={customMessageTitle} setTitle={setCustomMessageTitle} data={customMessageData} setData={setCustomMessageData} onConfirm={handleConfirmCustomMessageModal} onDelete={handleDeleteCustomMessageModal} customMessages={customMessages}/>
+            </Modal>
         </div>
     );
 };

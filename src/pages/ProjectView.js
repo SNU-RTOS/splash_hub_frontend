@@ -15,6 +15,7 @@ import {request} from '../utils/axios';
 import FileSaver from 'file-saver';
 import axios from 'axios';
 import {API_HOST} from '../config';
+import Schema2 from '../components/ProjectView/Schema2';
 const useStyles = makeStyles((theme) => ({
   appBarSpacer: theme.mixins.toolbar,
   overview: {
@@ -37,6 +38,13 @@ const useStyles = makeStyles((theme) => ({
   topPane: {
     display: 'flex',
     flexDirection: 'row',
+  },
+  tabPanel: {
+    '& .MuiBox-root': {
+        width: '98%',
+        height: '98%',
+        padding: '1%',
+    },
   }
 }))
 
@@ -112,23 +120,26 @@ const ProjectView = (props) => {
         }
         return bytes;
     }
-    const request_download_code = async () => {
-        try {
-            axios.get( 
-                API_HOST + '/project/code/download/'+params.id+'/', 
-                {
-                    responseType: 'arraybuffer'
-                } )
-                .then(response => {
-                    const blob = new Blob([response.data], {type: "application/zip"});
-                    FileSaver.saveAs(blob, data.name+'.zip'); 
-                })
-        } catch(e) {
-            console.log(e)
-        }
-    }
+    // const request_download_code = async () => {
+    //     try {
+    //         axios.get( 
+    //             API_HOST + '/project/code/download/'+params.id+'/', 
+    //             {
+    //                 responseType: 'arraybuffer'
+    //             } )
+    //             .then(response => {
+    //                 const blob = new Blob([response.data], {type: "application/zip"});
+    //                 FileSaver.saveAs(blob, data.name+'.zip'); 
+    //             })
+    //     } catch(e) {
+    //         console.log(e)
+    //     }
+    // }
     const go_to_edit_schema = () => {
         history.push('/edit_schematic', {project_id: params.id, is_new: false})
+    }
+    const go_to_ide = () => {
+        history.push('/ide', {project_id: params.id, codeTree: codeTree})
     }
     return (
         <div>
@@ -136,7 +147,7 @@ const ProjectView = (props) => {
             <div className={classes.appBarSpacer} />
             <div className={classes.topPane}>
                 <ProjectOverview data={data}/>
-                <Buttons request_download_code={request_download_code} go_to_edit_schema={go_to_edit_schema}/>
+                <Buttons go_to_ide={go_to_ide} go_to_edit_schema={go_to_edit_schema}/>
             </div>
             <AppBar position="sticky" color='transparent'>
                 <Tabs value={value} onChange={handleChange} aria-label="tabs" >
@@ -144,10 +155,10 @@ const ProjectView = (props) => {
                     <Tab className={classes.tab} label="Code" {...a11yProps(1)} />
                 </Tabs>
             </AppBar>
-            <TabPanel value={value} index={0}>
-                <Schema schemaData={schemaData}/>
+            <TabPanel className={classes.tabPanel} value={value} index={0}>
+                <Schema2 schemaData={schemaData}/>
             </TabPanel>
-            <TabPanel value={value} index={1}>
+            <TabPanel className={classes.tabPanel} value={value} index={1}>
                 <Code id={params.id} codeTree={codeTree}/>
             </TabPanel>
         </div>

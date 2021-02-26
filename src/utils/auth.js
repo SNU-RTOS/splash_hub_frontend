@@ -10,6 +10,7 @@ export default (Component, option) => {
   // null => 아무나 출입가능
   // true => 로그인한 유저만 출입 가능
   // false => 로그인한 유저는 출입 불가능
+
   const AuthCheck = (props) => {
     const [userInfo, setUserInfo] = useState(null)
     const auth = () => {
@@ -32,13 +33,18 @@ export default (Component, option) => {
     }
     useEffect(() => {
         const token = storage.get('token');
-        let res = null;
-        
         if(token) {
             set_token(token)
             auth()
         }
-        
+        else {
+            if(option === null) {
+                //
+            }
+            else if(option === true) {
+                props.history.push('/signin');
+            }
+        }
     }, []);
     return Component(props, userInfo);
   }

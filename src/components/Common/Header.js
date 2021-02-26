@@ -18,6 +18,7 @@ const useStyles = makeStyles((theme) => ({
         width: '100%',
         position: 'fixed',
         top: 0,
+        zIndex: 10,
     },
     logoWrapper: {
         alignSelf: 'center',
@@ -134,6 +135,7 @@ const Header = (props) => {
                     </div>
                     <div className={classes.grow} />
                     <div className={classes.buttonWrapper}>
+                    <Button color="inherit" className={classes.button} href="/">Dashboard</Button>
                     <Button color="inherit" className={classes.button} href="/search">Explore</Button>
                     <Button color="inherit" className={classes.button} href={userInfo ? `/projects/${userInfo.username}` : '/projects/'}>Projects</Button>
                     {token === null ? <Button color="inherit" className={classes.button} href="/signin">Sign in</Button> : null}

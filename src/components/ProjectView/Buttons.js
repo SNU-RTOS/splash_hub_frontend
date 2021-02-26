@@ -4,7 +4,8 @@ import Button from '@material-ui/core/Button';
 import GetAppIcon from '@material-ui/icons/GetApp';
 import EditIcon from '@material-ui/icons/Edit';
 import { indigo, blue } from '@material-ui/core/colors';
-
+import CodeOutlinedIcon from '@material-ui/icons/CodeOutlined';
+import PaletteIcon from '@material-ui/icons/Palette';
 const useStyles = makeStyles((theme) => ({
     root: {
         width: '50%',
@@ -30,6 +31,12 @@ const theme = createMuiTheme({
     },
   });
 
+const SchemaIcon = () => {
+    return <image src="/images/icon_schema.png"/>
+}
+const IDEIcon = () => {
+    return <image src="/images/icon_coding.png"/>
+}
 const Buttons = (props) => {
     const classes = useStyles()
     return <div className={classes.root}>
@@ -38,19 +45,19 @@ const Buttons = (props) => {
             color='primary' 
             variant="contained"
             className={classes.code}
-            startIcon={<GetAppIcon/>}
-            onClick={props.request_download_code}
+            startIcon={<CodeOutlinedIcon/>}
+            onClick={props.go_to_ide}
             >
-                Code
+                Run IDE
             </Button>
             <Button 
             color='secondary'
             variant="contained"
             className={classes.edit}
-            startIcon={<EditIcon/>}
+            startIcon={<PaletteIcon/>}
             onClick={props.go_to_edit_schema}
             >
-                Edit
+                Edit Schematic
             </Button>
         </ThemeProvider>
     </div>

@@ -30,6 +30,7 @@ const FileTree = (props) => {
     const classes = useStyles();
     const history = useHistory()
     useEffect(() => {
+        console.log(codeTree)
         explore_path(curPath, codeTree.children);
     }, [curPath]);
     const explore_path = (path, children) => {
