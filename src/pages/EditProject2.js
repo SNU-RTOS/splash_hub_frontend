@@ -583,7 +583,7 @@ const EditProject2 = (props) => {
                     linkDataArray: linkDataArray
                 }
                 const modelAsText = JSON.stringify(data);
-                
+                console.log(modelAsText)
                 const response = await request('put', '/project/schema/'+project_id+'/', {
                     data: modelAsText
                 })

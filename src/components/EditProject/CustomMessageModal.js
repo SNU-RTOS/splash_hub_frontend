@@ -181,8 +181,10 @@ const CustomMessageModal = (props) => {
                       setCurTitle(event.target.value)
                     }}
                     onBlur={event=>{
-                      setIsEditingTitle(false)
-                      setTitle(curTitle)
+                      if(curTitle) {
+                        setIsEditingTitle(false)
+                        setTitle(curTitle)
+                      }
                     }}
                     onKeyUp={event=>{
                       if(event.key==='Escape') {

@@ -88,8 +88,13 @@ const ChannelConfigurationModal = (props) => {
     }
     const requestSaveCustomMessage = async () => {
         try {
-            const response = await request('put', '/project/custom_message/' + customMessageIdSelected + '/', {name: customMessageTitle, fields:JSON.stringify(customMessageData)})
-            if(response.status === 200) {
+            let response;
+            if(customMessageIdSelected > 0) {
+                response = await request('put', '/project/custom_message/' + customMessageIdSelected + '/', {name: customMessageTitle, fields:JSON.stringify(customMessageData)})
+            }else {
+                response = await request("post", '/project/custom_message/new/', {name: customMessageTitle, fields:JSON.stringify(customMessageData)})
+            }
+            if(response.status === 201) { 
                 setType(customMessageTitle)
                 requestCustomMessages()
             }
