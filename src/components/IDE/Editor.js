@@ -116,11 +116,11 @@ const Editor = (props) => {
             root: classes.tabs,
             flexContainer: classes.flexContainer
         }}>
-            {tabs.map((tab) => {
+            {tabs.map((tab, id) => {
                 if(tab === selectedTab)
-                    return (<Tab onClick={()=>handleSelectTab(tab.path)} style={{height:'30px', padding: '0px'}} label={tab.name} classes={{root: classes.activeTab}}/>)
+                    return (<Tab key={id} onClick={()=>handleSelectTab(tab.path)} style={{height:'30px', padding: '0px'}} label={tab.name} classes={{root: classes.activeTab}}/>)
                 else 
-                    return (<Tab onClick={()=>handleSelectTab(tab.path)} style={{height:'30px', padding: '0px'}} label={tab.name} classes={{root: classes.tab}}/>)
+                    return (<Tab key={id} onClick={()=>handleSelectTab(tab.path)} style={{height:'30px', padding: '0px'}} label={tab.name} classes={{root: classes.tab}}/>)
 
             })}
         </Tabs>

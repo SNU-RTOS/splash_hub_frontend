@@ -53,6 +53,7 @@ let isIncoming_toFusionOperator = false;
 let posX_atFusionOperator;
 let posY_atFusionOperator;
 let portType_atFusionOperator;
+let myChangingSelection = false;
 
 const useStyles = makeStyles((theme) => ({
     root: {
@@ -105,7 +106,7 @@ const useStyles = makeStyles((theme) => ({
     },
     overviewDiv: {
         width: '100%',
-        height: '100%',
+        height: '90%',
     },
     title: {
         width: '100%',
@@ -122,7 +123,7 @@ const useStyles = makeStyles((theme) => ({
     },
     selectionPaneDiv: {
         width: '100%',
-        height: '100%',
+        height: '90%',
     },
     appBar: {
         height: '60px',
@@ -761,6 +762,17 @@ const EditProject2 = (props) => {
                 "draggingTool.isGridSnapEnabled": true,
                 "undoManager.isEnabled": true,
                 "animationManager.isEnabled": false,
+                "ChangedSelection": function(e) {
+                    if (myChangingSelection) return;
+                    myChangingSelection = true;
+                    let diagnodes = new go.Set();
+                    myDiagram.selection.each(function(n) {
+                        diagnodes.add(myDiagram_buildUnit_selectionPane.findNodeForData(n.data));
+                    });
+                    myDiagram_buildUnit_selectionPane.clearSelection();
+                    myDiagram_buildUnit_selectionPane.selectCollection(diagnodes);
+                    myChangingSelection = false;
+                },  
                 mouseDragOver: function(e) { 
                     console.log("mouseDragOver");
                     isDragging = true;
@@ -2248,6 +2260,17 @@ const EditProject2 = (props) => {
                 scrollsPageOnFocus: true,
                 contentAlignment: go.Spot.TopLeft,
                 "panningTool.isEnabled": false,
+                "ChangedSelection": function(e) {
+                    if (myChangingSelection) return;
+                    myChangingSelection = true;
+                    let diagnodes = new go.Set();
+                    myDiagram_buildUnit_selectionPane.selection.each(function(n) {
+                        diagnodes.add(myDiagram.findNodeForData(n.data));
+                    });
+                    myDiagram.clearSelection();
+                    myDiagram.selectCollection(diagnodes);
+                    myChangingSelection = false;
+                }, 
                 layout:
                     $(go.TreeLayout,
                     {
